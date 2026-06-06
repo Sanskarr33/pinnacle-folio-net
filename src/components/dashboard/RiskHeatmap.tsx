@@ -22,19 +22,19 @@ export function RiskHeatmap() {
           <div key={c.key} className="text-center text-muted-foreground font-medium uppercase tracking-wider text-[10px] pb-1">{c.label}</div>
         ))}
         {riskHeatmap.map((row) => (
-          <>
-            <div key={row.sector + "l"} className="text-foreground font-medium py-2 pr-2 truncate">{row.sector}</div>
+          <Fragment key={row.sector}>
+            <div className="text-foreground font-medium py-2 pr-2 truncate">{row.sector}</div>
             {cols.map((c) => (
               <div
-                key={row.sector + c.key}
-                className="rounded-md h-9 flex items-center justify-center text-[11px] font-semibold tabular text-white relative group transition-transform hover:scale-[1.04]"
+                key={c.key}
+                className="rounded-md h-9 flex items-center justify-center text-[11px] font-semibold tabular text-white relative transition-transform hover:scale-[1.04]"
                 style={{ background: color(row[c.key]) }}
                 title={`${row.sector} ${c.label} ${(row[c.key] * 100).toFixed(0)}%`}
               >
                 {(row[c.key] * 100).toFixed(0)}
               </div>
             ))}
-          </>
+          </Fragment>
         ))}
       </div>
       <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-[10.5px] text-muted-foreground">
