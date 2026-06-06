@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { Card } from "./Card";
 import { riskHeatmap } from "@/lib/dummy-data";
 
