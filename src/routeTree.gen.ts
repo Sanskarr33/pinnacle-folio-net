@@ -9,8 +9,116 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UlipsRouteImport } from './routes/ulips'
+import { Route as TransactionsRouteImport } from './routes/transactions'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as PmsRouteImport } from './routes/pms'
+import { Route as MutualFundsRouteImport } from './routes/mutual-funds'
+import { Route as InternationalRouteImport } from './routes/international'
+import { Route as FamilyRouteImport } from './routes/family'
+import { Route as ExitLoadRouteImport } from './routes/exit-load'
+import { Route as EtfsRouteImport } from './routes/etfs'
+import { Route as EquityRouteImport } from './routes/equity'
+import { Route as EntitiesRouteImport } from './routes/entities'
+import { Route as DataImportRouteImport } from './routes/data-import'
+import { Route as CapitalGainsRouteImport } from './routes/capital-gains'
+import { Route as BondsFdsRouteImport } from './routes/bonds-fds'
+import { Route as AllocationRouteImport } from './routes/allocation'
+import { Route as AifsRouteImport } from './routes/aifs'
+import { Route as AdvisorReviewRouteImport } from './routes/advisor-review'
 import { Route as IndexRouteImport } from './routes/index'
 
+const UlipsRoute = UlipsRouteImport.update({
+  id: '/ulips',
+  path: '/ulips',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TransactionsRoute = TransactionsRouteImport.update({
+  id: '/transactions',
+  path: '/transactions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PmsRoute = PmsRouteImport.update({
+  id: '/pms',
+  path: '/pms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MutualFundsRoute = MutualFundsRouteImport.update({
+  id: '/mutual-funds',
+  path: '/mutual-funds',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InternationalRoute = InternationalRouteImport.update({
+  id: '/international',
+  path: '/international',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FamilyRoute = FamilyRouteImport.update({
+  id: '/family',
+  path: '/family',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExitLoadRoute = ExitLoadRouteImport.update({
+  id: '/exit-load',
+  path: '/exit-load',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EtfsRoute = EtfsRouteImport.update({
+  id: '/etfs',
+  path: '/etfs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EquityRoute = EquityRouteImport.update({
+  id: '/equity',
+  path: '/equity',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EntitiesRoute = EntitiesRouteImport.update({
+  id: '/entities',
+  path: '/entities',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DataImportRoute = DataImportRouteImport.update({
+  id: '/data-import',
+  path: '/data-import',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CapitalGainsRoute = CapitalGainsRouteImport.update({
+  id: '/capital-gains',
+  path: '/capital-gains',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BondsFdsRoute = BondsFdsRouteImport.update({
+  id: '/bonds-fds',
+  path: '/bonds-fds',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AllocationRoute = AllocationRouteImport.update({
+  id: '/allocation',
+  path: '/allocation',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AifsRoute = AifsRouteImport.update({
+  id: '/aifs',
+  path: '/aifs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdvisorReviewRoute = AdvisorReviewRouteImport.update({
+  id: '/advisor-review',
+  path: '/advisor-review',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +127,284 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/advisor-review': typeof AdvisorReviewRoute
+  '/aifs': typeof AifsRoute
+  '/allocation': typeof AllocationRoute
+  '/bonds-fds': typeof BondsFdsRoute
+  '/capital-gains': typeof CapitalGainsRoute
+  '/data-import': typeof DataImportRoute
+  '/entities': typeof EntitiesRoute
+  '/equity': typeof EquityRoute
+  '/etfs': typeof EtfsRoute
+  '/exit-load': typeof ExitLoadRoute
+  '/family': typeof FamilyRoute
+  '/international': typeof InternationalRoute
+  '/mutual-funds': typeof MutualFundsRoute
+  '/pms': typeof PmsRoute
+  '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
+  '/transactions': typeof TransactionsRoute
+  '/ulips': typeof UlipsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/advisor-review': typeof AdvisorReviewRoute
+  '/aifs': typeof AifsRoute
+  '/allocation': typeof AllocationRoute
+  '/bonds-fds': typeof BondsFdsRoute
+  '/capital-gains': typeof CapitalGainsRoute
+  '/data-import': typeof DataImportRoute
+  '/entities': typeof EntitiesRoute
+  '/equity': typeof EquityRoute
+  '/etfs': typeof EtfsRoute
+  '/exit-load': typeof ExitLoadRoute
+  '/family': typeof FamilyRoute
+  '/international': typeof InternationalRoute
+  '/mutual-funds': typeof MutualFundsRoute
+  '/pms': typeof PmsRoute
+  '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
+  '/transactions': typeof TransactionsRoute
+  '/ulips': typeof UlipsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/advisor-review': typeof AdvisorReviewRoute
+  '/aifs': typeof AifsRoute
+  '/allocation': typeof AllocationRoute
+  '/bonds-fds': typeof BondsFdsRoute
+  '/capital-gains': typeof CapitalGainsRoute
+  '/data-import': typeof DataImportRoute
+  '/entities': typeof EntitiesRoute
+  '/equity': typeof EquityRoute
+  '/etfs': typeof EtfsRoute
+  '/exit-load': typeof ExitLoadRoute
+  '/family': typeof FamilyRoute
+  '/international': typeof InternationalRoute
+  '/mutual-funds': typeof MutualFundsRoute
+  '/pms': typeof PmsRoute
+  '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
+  '/transactions': typeof TransactionsRoute
+  '/ulips': typeof UlipsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/advisor-review'
+    | '/aifs'
+    | '/allocation'
+    | '/bonds-fds'
+    | '/capital-gains'
+    | '/data-import'
+    | '/entities'
+    | '/equity'
+    | '/etfs'
+    | '/exit-load'
+    | '/family'
+    | '/international'
+    | '/mutual-funds'
+    | '/pms'
+    | '/reports'
+    | '/settings'
+    | '/transactions'
+    | '/ulips'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/advisor-review'
+    | '/aifs'
+    | '/allocation'
+    | '/bonds-fds'
+    | '/capital-gains'
+    | '/data-import'
+    | '/entities'
+    | '/equity'
+    | '/etfs'
+    | '/exit-load'
+    | '/family'
+    | '/international'
+    | '/mutual-funds'
+    | '/pms'
+    | '/reports'
+    | '/settings'
+    | '/transactions'
+    | '/ulips'
+  id:
+    | '__root__'
+    | '/'
+    | '/advisor-review'
+    | '/aifs'
+    | '/allocation'
+    | '/bonds-fds'
+    | '/capital-gains'
+    | '/data-import'
+    | '/entities'
+    | '/equity'
+    | '/etfs'
+    | '/exit-load'
+    | '/family'
+    | '/international'
+    | '/mutual-funds'
+    | '/pms'
+    | '/reports'
+    | '/settings'
+    | '/transactions'
+    | '/ulips'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdvisorReviewRoute: typeof AdvisorReviewRoute
+  AifsRoute: typeof AifsRoute
+  AllocationRoute: typeof AllocationRoute
+  BondsFdsRoute: typeof BondsFdsRoute
+  CapitalGainsRoute: typeof CapitalGainsRoute
+  DataImportRoute: typeof DataImportRoute
+  EntitiesRoute: typeof EntitiesRoute
+  EquityRoute: typeof EquityRoute
+  EtfsRoute: typeof EtfsRoute
+  ExitLoadRoute: typeof ExitLoadRoute
+  FamilyRoute: typeof FamilyRoute
+  InternationalRoute: typeof InternationalRoute
+  MutualFundsRoute: typeof MutualFundsRoute
+  PmsRoute: typeof PmsRoute
+  ReportsRoute: typeof ReportsRoute
+  SettingsRoute: typeof SettingsRoute
+  TransactionsRoute: typeof TransactionsRoute
+  UlipsRoute: typeof UlipsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/ulips': {
+      id: '/ulips'
+      path: '/ulips'
+      fullPath: '/ulips'
+      preLoaderRoute: typeof UlipsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/transactions': {
+      id: '/transactions'
+      path: '/transactions'
+      fullPath: '/transactions'
+      preLoaderRoute: typeof TransactionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pms': {
+      id: '/pms'
+      path: '/pms'
+      fullPath: '/pms'
+      preLoaderRoute: typeof PmsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mutual-funds': {
+      id: '/mutual-funds'
+      path: '/mutual-funds'
+      fullPath: '/mutual-funds'
+      preLoaderRoute: typeof MutualFundsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/international': {
+      id: '/international'
+      path: '/international'
+      fullPath: '/international'
+      preLoaderRoute: typeof InternationalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/family': {
+      id: '/family'
+      path: '/family'
+      fullPath: '/family'
+      preLoaderRoute: typeof FamilyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/exit-load': {
+      id: '/exit-load'
+      path: '/exit-load'
+      fullPath: '/exit-load'
+      preLoaderRoute: typeof ExitLoadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/etfs': {
+      id: '/etfs'
+      path: '/etfs'
+      fullPath: '/etfs'
+      preLoaderRoute: typeof EtfsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/equity': {
+      id: '/equity'
+      path: '/equity'
+      fullPath: '/equity'
+      preLoaderRoute: typeof EquityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/entities': {
+      id: '/entities'
+      path: '/entities'
+      fullPath: '/entities'
+      preLoaderRoute: typeof EntitiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/data-import': {
+      id: '/data-import'
+      path: '/data-import'
+      fullPath: '/data-import'
+      preLoaderRoute: typeof DataImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/capital-gains': {
+      id: '/capital-gains'
+      path: '/capital-gains'
+      fullPath: '/capital-gains'
+      preLoaderRoute: typeof CapitalGainsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bonds-fds': {
+      id: '/bonds-fds'
+      path: '/bonds-fds'
+      fullPath: '/bonds-fds'
+      preLoaderRoute: typeof BondsFdsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/allocation': {
+      id: '/allocation'
+      path: '/allocation'
+      fullPath: '/allocation'
+      preLoaderRoute: typeof AllocationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/aifs': {
+      id: '/aifs'
+      path: '/aifs'
+      fullPath: '/aifs'
+      preLoaderRoute: typeof AifsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/advisor-review': {
+      id: '/advisor-review'
+      path: '/advisor-review'
+      fullPath: '/advisor-review'
+      preLoaderRoute: typeof AdvisorReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,6 +417,24 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdvisorReviewRoute: AdvisorReviewRoute,
+  AifsRoute: AifsRoute,
+  AllocationRoute: AllocationRoute,
+  BondsFdsRoute: BondsFdsRoute,
+  CapitalGainsRoute: CapitalGainsRoute,
+  DataImportRoute: DataImportRoute,
+  EntitiesRoute: EntitiesRoute,
+  EquityRoute: EquityRoute,
+  EtfsRoute: EtfsRoute,
+  ExitLoadRoute: ExitLoadRoute,
+  FamilyRoute: FamilyRoute,
+  InternationalRoute: InternationalRoute,
+  MutualFundsRoute: MutualFundsRoute,
+  PmsRoute: PmsRoute,
+  ReportsRoute: ReportsRoute,
+  SettingsRoute: SettingsRoute,
+  TransactionsRoute: TransactionsRoute,
+  UlipsRoute: UlipsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
