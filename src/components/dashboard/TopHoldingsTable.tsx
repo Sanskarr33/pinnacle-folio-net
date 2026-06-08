@@ -1,15 +1,23 @@
 import { Card } from "./Card";
-import { topHoldings } from "@/lib/dummy-data";
+import { useQuery } from "@tanstack/react-query";
+import { getTopHoldings } from "@/lib/data-service";
+import { topHoldings as fallback } from "@/lib/dummy-data";
 
 const typeColor: Record<string, string> = {
   Equity: "bg-[var(--chart-1)]/10 text-[var(--chart-1)]",
-  MF: "bg-[var(--chart-2)]/12 text-[var(--chart-2)]",
-  PMS: "bg-[var(--chart-5)]/12 text-[var(--chart-5)]",
-  ETF: "bg-[var(--chart-3)]/15 text-[oklch(0.5_0.13_80)]",
-  AIF: "bg-[var(--chart-4)]/12 text-[var(--chart-4)]",
+  MF:     "bg-[var(--chart-2)]/12 text-[var(--chart-2)]",
+  PMS:    "bg-[var(--chart-5)]/12 text-[var(--chart-5)]",
+  ETF:    "bg-[var(--chart-3)]/15 text-[oklch(0.5_0.13_80)]",
+  AIF:    "bg-[var(--chart-4)]/12 text-[var(--chart-4)]",
 };
 
 export function TopHoldingsTable() {
+  const { data: holdings = fallback } = useQuery({
+    queryKey: ["topHoldings"],
+    queryFn: getTopHoldings,
+    staleTime: 5 * 60 * 1000,
+  });
+
   return (
     <Card
       title="Top 10 holdings"
@@ -30,7 +38,7 @@ export function TopHoldingsTable() {
             </tr>
           </thead>
           <tbody>
-            {topHoldings.map((h, i) => (
+            {holdings.map((h, i) => (
               <tr key={h.name} className="border-b border-border/60 hover:bg-secondary/40 transition-colors">
                 <td className="px-5 py-3 text-muted-foreground tabular">{String(i + 1).padStart(2, "0")}</td>
                 <td className="py-3 font-medium text-foreground">{h.name}</td>

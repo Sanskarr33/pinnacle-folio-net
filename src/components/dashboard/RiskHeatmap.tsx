@@ -1,9 +1,10 @@
 import { Fragment } from "react";
 import { Card } from "./Card";
-import { riskHeatmap } from "@/lib/dummy-data";
+import { useQuery } from "@tanstack/react-query";
+import { getRiskHeatmap } from "@/lib/data-service";
+import { riskHeatmap as fallback } from "@/lib/dummy-data";
 
 function color(v: number) {
-  // 0 → muted; 1 → strong navy
   const alpha = Math.min(0.92, 0.08 + v * 0.85);
   return `oklch(0.34 0.12 260 / ${alpha})`;
 }
@@ -15,6 +16,12 @@ const cols = [
 ];
 
 export function RiskHeatmap() {
+  const { data: rows = fallback } = useQuery({
+    queryKey: ["riskHeatmap"],
+    queryFn: getRiskHeatmap,
+    staleTime: 15 * 60 * 1000,
+  });
+
   return (
     <Card title="Sector risk heatmap" subtitle="Concentration intensity by exposure">
       <div className="grid grid-cols-[1fr_repeat(3,minmax(0,1fr))] gap-1 text-[11px]">
@@ -22,7 +29,7 @@ export function RiskHeatmap() {
         {cols.map((c) => (
           <div key={c.key} className="text-center text-muted-foreground font-medium uppercase tracking-wider text-[10px] pb-1">{c.label}</div>
         ))}
-        {riskHeatmap.map((row) => (
+        {rows.map((row) => (
           <Fragment key={row.sector}>
             <div className="text-foreground font-medium py-2 pr-2 truncate">{row.sector}</div>
             {cols.map((c) => (

@@ -1,18 +1,36 @@
 import { Bell, Search, ChevronDown, Calendar } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
+import { useQuery } from "@tanstack/react-query";
+import { getMarketTickers } from "@/lib/data-service";
+import { marketTickers as fallback } from "@/lib/dummy-data";
+import type { MarketTicker } from "@/lib/types";
 
 export function TopHeader() {
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   });
 
+  const refreshedAt = new Date().toLocaleTimeString("en-IN", {
+    hour: "2-digit", minute: "2-digit", hour12: false,
+  });
+
+  const { data: tickers = fallback } = useQuery({
+    queryKey: ["marketTickers"],
+    queryFn: getMarketTickers,
+    staleTime: 60 * 1000, // refresh every minute
+  });
+
   return (
     <header className="sticky top-0 z-30 h-16 bg-surface/80 backdrop-blur-md border-b border-border flex items-center px-6 gap-4">
       <SidebarTrigger className="text-muted-foreground" />
+
       <div className="hidden md:flex items-center gap-1.5 text-[12px] text-muted-foreground border-r border-border pr-4 mr-2">
-        <Calendar className="h-3.5 w-3.5" />
-        <span className="tabular">{today}</span>
+        <Calendar className="h-3.5 w-3.5 shrink-0" />
+        <div className="flex flex-col leading-none">
+          <span className="tabular">{today}</span>
+          <span className="text-[10px] text-muted-foreground/60 mt-0.5">Data as of {refreshedAt} IST</span>
+        </div>
       </div>
 
       <div className="relative flex-1 max-w-md">
@@ -26,10 +44,7 @@ export function TopHeader() {
 
       <div className="ml-auto flex items-center gap-4">
         <div className="hidden lg:flex items-center gap-4 text-[11px] tabular pr-4 border-r border-border">
-          <Ticker label="NIFTY" value="24,812" change="+0.42%" up />
-          <Ticker label="SENSEX" value="81,420" change="+0.38%" up />
-          <Ticker label="USD/INR" value="83.42" change="-0.08%" up={false} />
-          <Ticker label="GOLD" value="71,240" change="+0.91%" up />
+          {tickers.map((t) => <Ticker key={t.label} {...t} />)}
         </div>
 
         <button className="relative h-9 w-9 rounded-full hover:bg-secondary flex items-center justify-center transition-colors">
@@ -38,7 +53,7 @@ export function TopHeader() {
         </button>
 
         <div className="flex items-center gap-2.5 pl-2 border-l border-border">
-          <div className="h-9 w-9 rounded-full bg-navy text-navy-foreground flex items-center justify-center text-[11px] font-semibold tracking-wide">
+          <div className="h-9 w-9 rounded-full bg-navy text-navy-foreground flex items-center justify-center text-[11px] font-semibold tracking-wide shrink-0">
             SG
           </div>
           <div className="hidden md:flex flex-col leading-tight">
@@ -52,7 +67,7 @@ export function TopHeader() {
   );
 }
 
-function Ticker({ label, value, change, up }: { label: string; value: string; change: string; up: boolean }) {
+function Ticker({ label, value, change, up }: MarketTicker) {
   return (
     <div className="flex items-center gap-1.5">
       <span className="text-muted-foreground font-medium tracking-wider">{label}</span>

@@ -1,11 +1,20 @@
 import { Card } from "./Card";
-import { entityAllocation, inr } from "@/lib/dummy-data";
+import { useQuery } from "@tanstack/react-query";
+import { getEntityAllocation } from "@/lib/data-service";
+import { entityAllocation as fallback, inr } from "@/lib/dummy-data";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from "recharts";
 
 const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-5)", "var(--chart-3)", "var(--chart-4)", "var(--chart-1)", "var(--chart-2)"];
 
 export function EntityAllocationBar() {
-  const data = entityAllocation.map((e) => ({ ...e, cr: e.value / 10000000 }));
+  const { data: allocation = fallback } = useQuery({
+    queryKey: ["entityAllocation"],
+    queryFn: getEntityAllocation,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const data = allocation.map((e) => ({ ...e, cr: e.value / 10000000 }));
+
   return (
     <Card title="Entity-wise allocation" subtitle="AUM held by each family entity">
       <div className="h-[320px] -mx-2">

@@ -1,12 +1,21 @@
 import { Card } from "./Card";
-import { advisorAUM } from "@/lib/dummy-data";
+import { useQuery } from "@tanstack/react-query";
+import { getAdvisorAUM } from "@/lib/data-service";
+import { advisorAUM as fallback } from "@/lib/dummy-data";
 
 export function AdvisorComparison() {
-  const max = Math.max(...advisorAUM.map((a) => a.aum));
+  const { data: advisors = fallback } = useQuery({
+    queryKey: ["advisorAUM"],
+    queryFn: getAdvisorAUM,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const max = Math.max(...advisors.map((a) => a.aum));
+
   return (
     <Card title="Advisor-wise AUM" subtitle="Mandate split · XIRR shown alongside">
       <div className="space-y-3.5">
-        {advisorAUM.map((a) => (
+        {advisors.map((a) => (
           <div key={a.advisor}>
             <div className="flex items-center justify-between text-[12px] mb-1.5">
               <span className="font-medium text-foreground">{a.advisor}</span>

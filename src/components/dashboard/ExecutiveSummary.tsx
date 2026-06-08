@@ -1,12 +1,21 @@
-import { TrendingUp, TrendingDown, Wallet, Activity, Target, Sparkles } from "lucide-react";
-import { familyKpis, inr, pct } from "@/lib/dummy-data";
+import { TrendingUp, TrendingDown, Wallet, Activity, Target } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { getFamilyKpis } from "@/lib/data-service";
+import { familyKpis as fallback, inr, pct } from "@/lib/dummy-data";
 
 export function ExecutiveSummary() {
-  const k = familyKpis;
+  const { data: k = fallback } = useQuery({
+    queryKey: ["familyKpis"],
+    queryFn: getFamilyKpis,
+    staleTime: 5 * 60 * 1000,
+  });
+
   return (
     <div className="relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-navy via-navy to-[oklch(0.22_0.06_265)] text-navy-foreground shadow-elevated">
-      <div className="absolute inset-0 opacity-[0.06] pointer-events-none"
-        style={{ backgroundImage: "radial-gradient(circle at 20% 20%, white 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+      <div
+        className="absolute inset-0 opacity-[0.06] pointer-events-none"
+        style={{ backgroundImage: "radial-gradient(circle at 20% 20%, white 1px, transparent 1px)", backgroundSize: "24px 24px" }}
+      />
       <div className="relative grid grid-cols-12 gap-0">
         <div className="col-span-12 lg:col-span-4 p-6 border-b lg:border-b-0 lg:border-r border-white/10">
           <p className="text-[10px] uppercase tracking-[0.22em] text-white/55 font-medium">Total Family AUM</p>
@@ -14,11 +23,11 @@ export function ExecutiveSummary() {
             <span className="text-[44px] leading-none font-semibold tracking-tight tabular">{inr(k.totalAUM, { compact: true })}</span>
           </div>
           <div className="mt-3 flex items-center gap-3 text-[12px]">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-success/20 text-emerald-300 font-medium">
-              <TrendingUp className="h-3 w-3" />
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium ${k.dayChange >= 0 ? "bg-success/20 text-emerald-300" : "bg-destructive/20 text-rose-300"}`}>
+              {k.dayChange >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
               {pct(k.dayChangePct)} today
             </span>
-            <span className="text-white/55 tabular">+{inr(k.dayChange, { compact: true })}</span>
+            <span className="text-white/55 tabular">{k.dayChange >= 0 ? "+" : ""}{inr(k.dayChange, { compact: true })}</span>
           </div>
           <div className="mt-5 pt-5 border-t border-white/10 grid grid-cols-2 gap-4 text-[11px]">
             <div>
@@ -33,10 +42,10 @@ export function ExecutiveSummary() {
         </div>
 
         <div className="col-span-12 lg:col-span-8 grid grid-cols-2 md:grid-cols-4">
-          <Stat icon={TrendingUp} label="Unrealised P/L" value={inr(k.unrealisedGain, { compact: true })} sub={pct(k.unrealisedGainPct)} positive />
-          <Stat icon={Wallet} label="Realised P/L (FY)" value={inr(k.realisedGain, { compact: true })} sub={pct(k.realisedGainPct)} positive />
-          <Stat icon={Target} label="Portfolio XIRR" value={`${k.xirr}%`} sub="vs benchmark 12.4%" positive />
-          <Stat icon={Activity} label="Day Movement" value={pct(k.dayChangePct)} sub={inr(k.dayChange, { compact: true })} positive last />
+          <Stat icon={TrendingUp}  label="Unrealised P/L"  value={inr(k.unrealisedGain, { compact: true })} sub={pct(k.unrealisedGainPct)} positive={k.unrealisedGain >= 0} />
+          <Stat icon={Wallet}      label="Realised P/L (FY)" value={inr(k.realisedGain, { compact: true })} sub={pct(k.realisedGainPct)} positive={k.realisedGain >= 0} />
+          <Stat icon={Target}      label="Portfolio XIRR"  value={`${k.xirr}%`} sub="vs benchmark 12.4%" positive={k.xirr >= 12.4} />
+          <Stat icon={Activity}    label="Day Movement"    value={pct(k.dayChangePct)} sub={inr(k.dayChange, { compact: true })} positive={k.dayChange >= 0} last />
         </div>
       </div>
     </div>
@@ -44,7 +53,8 @@ export function ExecutiveSummary() {
 }
 
 function Stat({ icon: Icon, label, value, sub, positive, last }: {
-  icon: React.ComponentType<{ className?: string }>; label: string; value: string; sub: string; positive: boolean; last?: boolean;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string; value: string; sub: string; positive: boolean; last?: boolean;
 }) {
   return (
     <div className={`p-6 border-t border-white/10 lg:border-t-0 ${!last ? "border-r border-white/10" : ""}`}>

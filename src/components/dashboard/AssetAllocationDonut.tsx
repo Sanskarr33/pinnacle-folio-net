@@ -1,17 +1,31 @@
 import { Card } from "./Card";
-import { assetAllocation, inr } from "@/lib/dummy-data";
+import { useQuery } from "@tanstack/react-query";
+import { getAssetAllocation, getFamilyKpis } from "@/lib/data-service";
+import { assetAllocation as fallbackAlloc, familyKpis as fallbackKpis, inr, pct } from "@/lib/dummy-data";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-5)", "var(--chart-3)", "var(--chart-4)"];
 
 export function AssetAllocationDonut() {
+  const { data: allocation = fallbackAlloc } = useQuery({
+    queryKey: ["assetAllocation"],
+    queryFn: getAssetAllocation,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: kpis = fallbackKpis } = useQuery({
+    queryKey: ["familyKpis"],
+    queryFn: getFamilyKpis,
+    staleTime: 5 * 60 * 1000,
+  });
+
   return (
     <Card title="Asset allocation" subtitle="Strategic mix · target band ±3%">
       <div className="relative h-[220px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={assetAllocation}
+              data={allocation}
               dataKey="value"
               cx="50%"
               cy="50%"
@@ -21,7 +35,7 @@ export function AssetAllocationDonut() {
               stroke="var(--surface)"
               strokeWidth={2}
             >
-              {assetAllocation.map((_, i) => (
+              {allocation.map((_, i) => (
                 <Cell key={i} fill={COLORS[i % COLORS.length]} />
               ))}
             </Pie>
@@ -29,12 +43,14 @@ export function AssetAllocationDonut() {
         </ResponsiveContainer>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Total AUM</span>
-          <span className="text-[22px] font-semibold tabular tracking-tight mt-0.5">₹300 Cr</span>
-          <span className="text-[10.5px] text-success tabular">+0.14% today</span>
+          <span className="text-[22px] font-semibold tabular tracking-tight mt-0.5">{inr(kpis.totalAUM, { compact: true })}</span>
+          <span className={`text-[10.5px] tabular ${kpis.dayChangePct >= 0 ? "text-success" : "text-destructive"}`}>
+            {pct(kpis.dayChangePct)} today
+          </span>
         </div>
       </div>
       <ul className="mt-5 space-y-2.5">
-        {assetAllocation.map((a, i) => (
+        {allocation.map((a, i) => (
           <li key={a.name} className="flex items-center justify-between text-[12px]">
             <div className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-sm" style={{ background: COLORS[i] }} />
