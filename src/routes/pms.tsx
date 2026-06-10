@@ -1,12 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PagePlaceholder } from "@/components/PagePlaceholder";
+import { DrillDownPage } from "@/components/DrillDownPage";
 
 export const Route = createFileRoute("/pms")({
-  head: () => ({
-    meta: [
-      { title: "PMS — SG Family Wealth" },
-      { name: "description", content: "Portfolio Management Services mandates, strategy-wise performance and fee tracking." },
-    ],
-  }),
-  component: () => <PagePlaceholder title="PMS" description="Portfolio Management Services mandates, strategy-wise performance and fee tracking." />,
+  head: () => ({ meta: [
+    { title: "PMS — SG Family Wealth" },
+    { name: "description", content: "Portfolio Management Service allocations." },
+  ]}),
+  component: () => (
+    <DrillDownPage
+      title="PMS"
+      description="Portfolio Management Service mandates and current values."
+      filter={{ field: "product_type", values: ["PMS", "Portfolio Management"] }}
+    />
+  ),
 });
