@@ -155,7 +155,10 @@ export function DrillDownPage({
           </div>
         )}
       </Card>
+      </>
+      )}
     </div>
+
   );
 }
 
