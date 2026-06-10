@@ -32,6 +32,10 @@ let _rawHoldingsPromise: Promise<SGHoldingRow[] | null> | null = null;
 let _rawHoldingsExpiry = 0;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+export async function getAllHoldings(): Promise<SGHoldingRow[] | null> {
+  return getRawHoldings();
+}
+
 async function getRawHoldings(): Promise<SGHoldingRow[] | null> {
   if (!supabase) return null;
   const now = Date.now();
