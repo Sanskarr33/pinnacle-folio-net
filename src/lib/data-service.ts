@@ -17,6 +17,7 @@ import type {
   FamilyKpis, AssetClass, ProductExposure, EntityAllocation,
   WealthPoint, AdvisorAUM, Holding, TopMovers, Transaction,
   RiskAlert, ActionItem, RiskHeatmapRow, MarketTicker, SGHoldingRow,
+  PortfolioHolding,
 } from "./types";
 import {
   familyKpis, assetAllocation, productExposure, entityAllocation,
@@ -212,4 +213,40 @@ export async function getRiskHeatmap(): Promise<RiskHeatmapRow[]> {
 
 export async function getMarketTickers(): Promise<MarketTicker[]> {
   return marketTickers;
+}
+
+// ─── portfolio_detailed_holdings cache ────────────────────────────────────────
+// All 10 product pages share a single Supabase request via React Query's
+// queryKey deduplication — this module-level cache prevents duplicate fetches
+// when multiple pages are visible simultaneously.
+
+let _detailedHoldingsPromise: Promise<PortfolioHolding[]> | null = null;
+let _detailedHoldingsExpiry = 0;
+
+export async function getDetailedHoldings(): Promise<PortfolioHolding[]> {
+  if (!supabase) return [];
+  const now = Date.now();
+  if (_detailedHoldingsPromise && now < _detailedHoldingsExpiry) return _detailedHoldingsPromise;
+
+  _detailedHoldingsExpiry = now + CACHE_TTL;
+  _detailedHoldingsPromise = supabase
+    .from("portfolio_detailed_holdings")
+    .select("*")
+    .then(({ data, error }) => {
+      if (error) {
+        console.error("[data-service] portfolio_detailed_holdings fetch error:", error.message);
+        _detailedHoldingsPromise = null;
+        _detailedHoldingsExpiry = 0;
+        return [];
+      }
+      return (data ?? []) as PortfolioHolding[];
+    })
+    .catch((err: unknown) => {
+      console.error("[data-service] getDetailedHoldings exception:", err);
+      _detailedHoldingsPromise = null;
+      _detailedHoldingsExpiry = 0;
+      return [];
+    });
+
+  return _detailedHoldingsPromise;
 }

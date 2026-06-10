@@ -98,6 +98,26 @@ export interface MarketTicker {
   up: boolean;
 }
 
+// Row from portfolio_detailed_holdings.
+// Monetary values assumed to be in Indian Rupees (₹).
+// Adjust the CR constant in holdings components if your import stores values in Crore.
+export interface PortfolioHolding {
+  report_section: string | null;
+  asset_class: string | null;
+  category: string | null;
+  product_type: string | null;
+  security_name: string | null;
+  scheme_name: string | null;
+  current_value: number | null;    // ₹ rupees
+  invested_value: number | null;   // ₹ rupees
+  unrealised_gain: number | null;  // ₹ rupees
+  gain_percent: number | null;     // e.g. 22.4 for 22.4%
+  allocation_percent: number | null;
+  xirr: number | null;             // e.g. 18.2 for 18.2%
+  exit_load: string | null;        // free-form, e.g. "1% if redeemed within 1 year"
+  holding_term: string | null;     // "Short Term" | "Long Term" | duration string
+}
+
 // Raw row shape of sg_family_holdings_import.
 // All monetary values are in Indian Rupees (₹).
 // Optional columns may not exist in every export — code handles their absence.
