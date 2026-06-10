@@ -22,10 +22,12 @@ export function DrillDownPage({
     staleTime: 5 * 60 * 1000,
   });
 
-  const rows: SGHoldingRow[] = (all ?? []).filter((r) => {
-    const v = (r[filter.field] ?? "").toString().trim().toLowerCase();
-    return filter.values.some((w) => v === w.trim().toLowerCase());
-  });
+  const rows: SGHoldingRow[] = filter.values.includes("*")
+    ? (all ?? [])
+    : (all ?? []).filter((r) => {
+        const v = (r[filter.field] ?? "").toString().trim().toLowerCase();
+        return filter.values.some((w) => v === w.trim().toLowerCase());
+      });
 
   const totalAll = (all ?? []).reduce((s, r) => s + (r.current_value ?? 0), 0);
   const current = rows.reduce((s, r) => s + (r.current_value ?? 0), 0);
