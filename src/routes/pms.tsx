@@ -4,13 +4,13 @@ import { DrillDownPage } from "@/components/DrillDownPage";
 export const Route = createFileRoute("/pms")({
   head: () => ({ meta: [
     { title: "PMS — SG Family Wealth" },
-    { name: "description", content: "Portfolio Management Service allocations." },
+    { name: "description", content: "Portfolio Management Service mandates." },
   ]}),
   component: () => (
     <DrillDownPage
       title="PMS"
       description="Portfolio Management Service mandates and current values."
-      filter={{ field: "product_type", values: ["PMS", "Portfolio Management"] }}
+      filter={{ kind: "contains", fields: ["product_type", "security_name"], keywords: ["PMS"] }}
     />
   ),
 });
