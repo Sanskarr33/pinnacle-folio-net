@@ -83,6 +83,19 @@ export function DrillDownPage({
         <p className="text-sm text-muted-foreground mt-1 max-w-2xl">{description}</p>
       </div>
 
+      {detailedEmptyLive ? (
+        <div className="rounded-xl border border-dashed border-border bg-surface p-12 flex flex-col items-center justify-center text-center shadow-elegant">
+          <div className="h-12 w-12 rounded-lg bg-secondary text-muted-foreground flex items-center justify-center">
+            <Database className="h-5 w-5" />
+          </div>
+          <h3 className="mt-4 text-[15px] font-semibold">Detailed holdings data not imported yet</h3>
+          <p className="mt-1.5 text-[13px] text-muted-foreground max-w-md">
+            Once rows are loaded into <code className="text-foreground">portfolio_detailed_holdings</code>,
+            instrument-level KPIs and the holdings table for this module will populate automatically.
+          </p>
+        </div>
+      ) : (
+      <>
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Kpi icon={Wallet}     label="Current value"   value={inr(current, { compact: true })} />
         <Kpi icon={Layers}     label="Invested value"  value={inr(invested, { compact: true })} />
@@ -92,6 +105,7 @@ export function DrillDownPage({
       </div>
 
       {extra}
+
 
       <Card title="Holdings" subtitle={`${rows.length} instrument${rows.length === 1 ? "" : "s"} matching this filter`}>
         {isLoading ? (
