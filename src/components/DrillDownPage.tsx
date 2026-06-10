@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { getAllHoldings } from "@/lib/data-service";
+import { getAllHoldings, getDetailedHoldings } from "@/lib/data-service";
 import { inr, pct } from "@/lib/dummy-data";
 import { Card } from "@/components/dashboard/Card";
 import type { SGHoldingRow } from "@/lib/types";
-import { TrendingUp, TrendingDown, Wallet, PieChart, Layers } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, PieChart, Layers, Database } from "lucide-react";
 
 type FieldName = "asset_class" | "product_type" | "security_name";
 
@@ -25,19 +25,48 @@ export function DrillDownPage({
   description,
   filter,
   extra,
+  source = "detailed",
 }: {
   title: string;
   description: string;
   filter: DrillFilter;
   extra?: React.ReactNode;
+  /** "detailed" → portfolio_detailed_holdings (default for product pages).
+   *  "summary"  → sg_family_holdings_import (executive summary). */
+  source?: "detailed" | "summary";
 }) {
-  const { data: all, isLoading } = useQuery({
+  const { data: detailed, isLoading: detailedLoading } = useQuery({
+    queryKey: ["detailedHoldings"],
+    queryFn: getDetailedHoldings,
+    staleTime: 5 * 60 * 1000,
+    enabled: source === "detailed",
+  });
+  const { data: summary, isLoading: summaryLoading } = useQuery({
     queryKey: ["allHoldings"],
     queryFn: getAllHoldings,
     staleTime: 5 * 60 * 1000,
+    enabled: source === "summary" || (source === "detailed" && detailed === null),
   });
 
-  const rows: SGHoldingRow[] = (all ?? []).filter((r) => matchesFilter(r, filter));
+  const isLoading = source === "detailed" ? detailedLoading : summaryLoading;
+
+  // Decide which dataset feeds the page.
+  //  - source="summary": always use summary table.
+  //  - source="detailed": use detailed rows when available; if Supabase fetch
+  //    returned null (connection failure / not configured), fall back to summary.
+  //    If detailed returned [] (live but empty), DO NOT fall back — show empty state.
+  const detailedEmptyLive = source === "detailed" && Array.isArray(detailed) && detailed.length === 0;
+  const all: SGHoldingRow[] =
+    source === "summary"
+      ? (summary ?? [])
+      : Array.isArray(detailed) && detailed.length > 0
+        ? detailed
+        : detailed === null
+          ? (summary ?? [])
+          : []; // detailed === [] → empty live table
+
+  const rows = all.filter((r) => matchesFilter(r, filter));
+
 
   const totalAll = (all ?? []).reduce((s, r) => s + (r.current_value ?? 0), 0);
   const current = rows.reduce((s, r) => s + (r.current_value ?? 0), 0);
