@@ -97,3 +97,22 @@ export interface MarketTicker {
   change: string; // "+0.42%"
   up: boolean;
 }
+
+// Raw row shape of sg_family_holdings_import.
+// All monetary values are in Indian Rupees (₹).
+// Optional columns may not exist in every export — code handles their absence.
+export interface SGHoldingRow {
+  security_name: string;
+  asset_class: string;
+  product_type: string;
+  current_value: number;    // ₹ rupees — source for AUM
+  invested_value: number;   // ₹ rupees — source for invested amount
+  unrealised_gain: number;  // ₹ rupees — source for unrealised P/L
+  // Optional columns — present in some exports
+  entity_name?: string | null;
+  quantity?: number | null;
+  ltp?: number | null;           // last traded price (₹)
+  gain_pct?: number | null;      // unrealised gain % (derived if absent)
+  adviser?: string | null;
+  isin?: string | null;
+}

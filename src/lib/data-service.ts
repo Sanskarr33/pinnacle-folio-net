@@ -1,13 +1,22 @@
 // Data service — all async functions the dashboard components call.
-// Each function tries Supabase first, falls back to dummy-data when not configured.
-// To connect real data: set VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY in .env.local
-// and ensure the Supabase tables have the matching schema.
+//
+// PRIMARY DATA SOURCE: sg_family_holdings_import (Supabase)
+//   All KPI, allocation, and holdings data is derived from this single table.
+//   Activate by setting VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY in .env.local
+//   at the project root (not inside src/).
+//
+// FALLBACK: dummy-data.ts values are used when Supabase is not configured
+//   or when a fetch fails, so the dashboard always renders.
+//
+// ASSUMPTION: monetary values in sg_family_holdings_import are in Indian Rupees (₹).
+//   If your table stores values in Crore, multiply results by 10,000,000 before
+//   passing them to these functions.
 
 import { supabase } from "./supabase";
 import type {
   FamilyKpis, AssetClass, ProductExposure, EntityAllocation,
   WealthPoint, AdvisorAUM, Holding, TopMovers, Transaction,
-  RiskAlert, ActionItem, RiskHeatmapRow, MarketTicker,
+  RiskAlert, ActionItem, RiskHeatmapRow, MarketTicker, SGHoldingRow,
 } from "./types";
 import {
   familyKpis, assetAllocation, productExposure, entityAllocation,
@@ -15,121 +24,192 @@ import {
   riskAlerts, actionItems, riskHeatmap, marketTickers,
 } from "./dummy-data";
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Internal raw-holdings cache ──────────────────────────────────────────────
+// All five derived functions share a single Supabase request.
+// The promise is stored so concurrent calls dedup to one network round-trip.
 
-function snakeToCamel<T>(row: Record<string, unknown>): T {
-  return Object.fromEntries(
-    Object.entries(row).map(([k, v]) => [
-      k.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase()),
-      v,
-    ])
-  ) as T;
-}
+let _rawHoldingsPromise: Promise<SGHoldingRow[] | null> | null = null;
+let _rawHoldingsExpiry = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-async function fromTable<T>(table: string): Promise<T[] | null> {
+async function getRawHoldings(): Promise<SGHoldingRow[] | null> {
   if (!supabase) return null;
-  const { data, error } = await supabase.from(table).select("*");
-  if (error || !data) return null;
-  return (data as Record<string, unknown>[]).map((row) => snakeToCamel<T>(row));
+  const now = Date.now();
+  if (_rawHoldingsPromise && now < _rawHoldingsExpiry) return _rawHoldingsPromise;
+
+  _rawHoldingsExpiry = now + CACHE_TTL;
+  _rawHoldingsPromise = supabase
+    .from("sg_family_holdings_import")
+    .select("*")
+    .then(({ data, error }) => {
+      if (error) {
+        console.error("[data-service] sg_family_holdings_import fetch error:", error.message);
+        _rawHoldingsPromise = null;
+        _rawHoldingsExpiry = 0;
+        return null;
+      }
+      if (!data || data.length === 0) {
+        console.warn("[data-service] sg_family_holdings_import returned 0 rows — using dummy data");
+        _rawHoldingsPromise = null;
+        _rawHoldingsExpiry = 0;
+        return null;
+      }
+      return data as SGHoldingRow[];
+    })
+    .catch((err: unknown) => {
+      console.error("[data-service] getRawHoldings exception:", err);
+      _rawHoldingsPromise = null;
+      _rawHoldingsExpiry = 0;
+      return null;
+    });
+
+  return _rawHoldingsPromise;
 }
 
-// ─── Query functions ──────────────────────────────────────────────────────────
+// ─── Derived from sg_family_holdings_import ───────────────────────────────────
 
 export async function getFamilyKpis(): Promise<FamilyKpis> {
-  if (supabase) {
-    const { data, error } = await supabase.from("family_kpis").select("*").order("updated_at", { ascending: false }).limit(1).single();
-    if (!error && data) return snakeToCamel<FamilyKpis>(data as Record<string, unknown>);
+  const rows = await getRawHoldings();
+  if (rows) {
+    const totalAUM        = rows.reduce((s, r) => s + (r.current_value   ?? 0), 0);
+    const invested        = rows.reduce((s, r) => s + (r.invested_value  ?? 0), 0);
+    const unrealisedGain  = rows.reduce((s, r) => s + (r.unrealised_gain ?? 0), 0);
+    const unrealisedGainPct = invested > 0 ? (unrealisedGain / invested) * 100 : 0;
+    return {
+      totalAUM,
+      invested,
+      unrealisedGain,
+      unrealisedGainPct: +unrealisedGainPct.toFixed(2),
+      // Fields not available in holdings table — kept from dummy data
+      dayChange:      familyKpis.dayChange,
+      dayChangePct:   familyKpis.dayChangePct,
+      realisedGain:   familyKpis.realisedGain,
+      realisedGainPct: familyKpis.realisedGainPct,
+      xirr:           familyKpis.xirr,
+    };
   }
   return familyKpis;
 }
 
 export async function getAssetAllocation(): Promise<AssetClass[]> {
-  const rows = await fromTable<AssetClass>("asset_allocation");
-  return rows ?? assetAllocation;
+  const rows = await getRawHoldings();
+  if (rows) {
+    const byClass = new Map<string, number>();
+    let total = 0;
+    for (const r of rows) {
+      const cls = r.asset_class?.trim() || "Other";
+      const val = r.current_value ?? 0;
+      byClass.set(cls, (byClass.get(cls) ?? 0) + val);
+      total += val;
+    }
+    return Array.from(byClass.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, amount]) => ({
+        name,
+        value: total > 0 ? +((amount / total) * 100).toFixed(2) : 0,
+        amount,
+      }));
+  }
+  return assetAllocation;
 }
 
 export async function getProductExposure(): Promise<ProductExposure[]> {
-  const rows = await fromTable<ProductExposure>("product_exposure");
-  return rows ?? productExposure;
+  const rows = await getRawHoldings();
+  if (rows) {
+    const byProduct = new Map<string, number>();
+    let total = 0;
+    for (const r of rows) {
+      const pt  = r.product_type?.trim() || "Other";
+      const val = r.current_value ?? 0;
+      byProduct.set(pt, (byProduct.get(pt) ?? 0) + val);
+      total += val;
+    }
+    return Array.from(byProduct.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([product, value]) => ({
+        product,
+        value,
+        pct: total > 0 ? +((value / total) * 100).toFixed(2) : 0,
+      }));
+  }
+  return productExposure;
 }
 
 export async function getEntityAllocation(): Promise<EntityAllocation[]> {
-  const rows = await fromTable<EntityAllocation>("entity_allocation");
-  return rows ?? entityAllocation;
-}
-
-export async function getWealthTimeline(): Promise<WealthPoint[]> {
-  if (supabase) {
-    const { data, error } = await supabase.from("wealth_timeline").select("month, value").order("recorded_at", { ascending: true });
-    if (!error && data) return data as WealthPoint[];
+  const rows = await getRawHoldings();
+  if (rows) {
+    const byEntity = new Map<string, number>();
+    for (const r of rows) {
+      const entity = r.entity_name?.trim();
+      if (!entity) continue;
+      byEntity.set(entity, (byEntity.get(entity) ?? 0) + (r.current_value ?? 0));
+    }
+    if (byEntity.size > 0) {
+      return Array.from(byEntity.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([entity, value]) => ({ entity, value }));
+    }
   }
-  return wealthOverTime;
-}
-
-export async function getAdvisorAUM(): Promise<AdvisorAUM[]> {
-  const rows = await fromTable<AdvisorAUM>("advisor_aum");
-  return rows ?? advisorAUM;
+  return entityAllocation;
 }
 
 export async function getTopHoldings(): Promise<Holding[]> {
-  if (supabase) {
-    const { data, error } = await supabase.from("holdings").select("*").order("value", { ascending: false }).limit(10);
-    if (!error && data) return (data as Record<string, unknown>[]).map((r) => snakeToCamel<Holding>(r));
+  const rows = await getRawHoldings();
+  if (rows) {
+    return rows
+      .sort((a, b) => (b.current_value ?? 0) - (a.current_value ?? 0))
+      .slice(0, 10)
+      .map((r) => {
+        const invested   = r.invested_value  ?? 0;
+        const unrealised = r.unrealised_gain ?? 0;
+        // Use gain_pct column if present; otherwise derive from amounts
+        const gainPct = r.gain_pct != null
+          ? r.gain_pct
+          : invested > 0 ? (unrealised / invested) * 100 : 0;
+        return {
+          name:    r.security_name,
+          type:    r.product_type?.trim()  || r.asset_class?.trim() || "—",
+          entity:  r.entity_name?.trim()   || "—",
+          qty:     r.quantity ?? 0,
+          ltp:     r.ltp      ?? 0,
+          value:   +((r.current_value ?? 0) / 10000000).toFixed(2), // ₹ → Cr
+          gainPct: +gainPct.toFixed(2),
+        };
+      });
   }
   return topHoldings;
 }
 
+// ─── Not yet derived from holdings — remain on dummy data ─────────────────────
+
+export async function getWealthTimeline(): Promise<WealthPoint[]> {
+  return wealthOverTime;
+}
+
+export async function getAdvisorAUM(): Promise<AdvisorAUM[]> {
+  return advisorAUM;
+}
+
 export async function getTopMovers(): Promise<TopMovers> {
-  if (supabase) {
-    const { data, error } = await supabase.from("top_movers").select("*");
-    if (!error && data && (data as { side: string }[]).length > 0) {
-      const typed = data as { side: string; name: string; change: number; value: number }[];
-      return {
-        gainers: typed.filter((r) => r.side === "gainer").map(({ name, change, value }) => ({ name, change, value })),
-        losers: typed.filter((r) => r.side === "loser").map(({ name, change, value }) => ({ name, change, value })),
-      };
-    }
-  }
   return topMovers;
 }
 
 export async function getRecentTransactions(): Promise<Transaction[]> {
-  if (supabase) {
-    const { data, error } = await supabase.from("transactions").select("*").order("date", { ascending: false }).limit(10);
-    if (!error && data) return (data as Record<string, unknown>[]).map((r) => snakeToCamel<Transaction>(r));
-  }
   return recentTransactions;
 }
 
 export async function getRiskAlerts(): Promise<RiskAlert[]> {
-  if (supabase) {
-    const { data, error } = await supabase.from("risk_alerts").select("*").eq("is_active", true).order("severity");
-    if (!error && data) return (data as Record<string, unknown>[]).map((r) => snakeToCamel<RiskAlert>(r));
-  }
   return riskAlerts;
 }
 
 export async function getActionItems(): Promise<ActionItem[]> {
-  if (supabase) {
-    const { data, error } = await supabase.from("action_items").select("*").eq("is_completed", false).order("due_date", { ascending: true });
-    if (!error && data) return (data as Record<string, unknown>[]).map((r) => snakeToCamel<ActionItem>(r));
-  }
   return actionItems;
 }
 
 export async function getRiskHeatmap(): Promise<RiskHeatmapRow[]> {
-  const rows = await fromTable<RiskHeatmapRow>("risk_heatmap");
-  return rows ?? riskHeatmap;
+  return riskHeatmap;
 }
 
 export async function getMarketTickers(): Promise<MarketTicker[]> {
-  if (supabase) {
-    const { data, error } = await supabase.from("market_tickers").select("label, value, change, is_up");
-    if (!error && data) {
-      return (data as { label: string; value: string; change: string; is_up: boolean }[]).map((r) => ({
-        label: r.label, value: r.value, change: r.change, up: r.is_up,
-      }));
-    }
-  }
   return marketTickers;
 }
