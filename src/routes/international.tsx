@@ -10,7 +10,7 @@ export const Route = createFileRoute("/international")({
     <DrillDownPage
       title="International"
       description="Offshore equity, funds, and other international exposure."
-      filter={{ field: "asset_class", values: ["International", "Offshore", "Global", "Foreign"] }}
+      filter={{ kind: "contains", fields: ["product_type", "asset_class", "security_name"], keywords: ["International"] }}
     />
   ),
 });
