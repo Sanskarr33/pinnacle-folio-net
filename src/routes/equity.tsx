@@ -1,12 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PagePlaceholder } from "@/components/PagePlaceholder";
+import { DrillDownPage } from "@/components/DrillDownPage";
 
 export const Route = createFileRoute("/equity")({
-  head: () => ({
-    meta: [
-      { title: "Direct Equity — SG Family Wealth" },
-      { name: "description", content: "Stock-level positions, sector exposure, and intraday P&L across the family book." },
-    ],
-  }),
-  component: () => <PagePlaceholder title="Direct Equity" description="Stock-level positions, sector exposure, and intraday P&L across the family book." />,
+  head: () => ({ meta: [
+    { title: "Direct Equity — SG Family Wealth" },
+    { name: "description", content: "Direct equity stock holdings across the family." },
+  ]}),
+  component: () => (
+    <DrillDownPage
+      title="Direct Equity"
+      description="Listed stocks held directly across all entities."
+      filter={{ field: "product_type", values: ["Direct Equity", "Equity", "Stocks"] }}
+    />
+  ),
 });
