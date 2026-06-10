@@ -5,16 +5,31 @@ import { Card } from "@/components/dashboard/Card";
 import type { SGHoldingRow } from "@/lib/types";
 import { TrendingUp, TrendingDown, Wallet, PieChart, Layers } from "lucide-react";
 
-type Filter = { field: "asset_class" | "product_type"; values: string[] };
+type FieldName = "asset_class" | "product_type" | "security_name";
+
+export type DrillFilter =
+  | { kind: "all" }
+  | { kind: "contains"; fields: FieldName[]; keywords: string[] };
+
+export function matchesFilter(r: SGHoldingRow, filter: DrillFilter): boolean {
+  if (filter.kind === "all") return true;
+  const kws = filter.keywords.map((k) => k.toLowerCase());
+  return filter.fields.some((f) => {
+    const v = (r[f] ?? "").toString().toLowerCase();
+    return kws.some((k) => v.includes(k));
+  });
+}
 
 export function DrillDownPage({
   title,
   description,
   filter,
+  extra,
 }: {
   title: string;
   description: string;
-  filter: Filter;
+  filter: DrillFilter;
+  extra?: React.ReactNode;
 }) {
   const { data: all, isLoading } = useQuery({
     queryKey: ["allHoldings"],
@@ -22,12 +37,7 @@ export function DrillDownPage({
     staleTime: 5 * 60 * 1000,
   });
 
-  const rows: SGHoldingRow[] = filter.values.includes("*")
-    ? (all ?? [])
-    : (all ?? []).filter((r) => {
-        const v = (r[filter.field] ?? "").toString().trim().toLowerCase();
-        return filter.values.some((w) => v === w.trim().toLowerCase());
-      });
+  const rows: SGHoldingRow[] = (all ?? []).filter((r) => matchesFilter(r, filter));
 
   const totalAll = (all ?? []).reduce((s, r) => s + (r.current_value ?? 0), 0);
   const current = rows.reduce((s, r) => s + (r.current_value ?? 0), 0);
@@ -52,11 +62,13 @@ export function DrillDownPage({
         <Kpi icon={PieChart}   label="Allocation %"    value={`${allocPct.toFixed(2)}%`} />
       </div>
 
+      {extra}
+
       <Card title="Holdings" subtitle={`${rows.length} instrument${rows.length === 1 ? "" : "s"} matching this filter`}>
         {isLoading ? (
           <div className="py-12 text-center text-sm text-muted-foreground">Loading holdings…</div>
         ) : rows.length === 0 ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">No holdings found in sg_family_holdings_import for this category.</div>
+          <div className="py-12 text-center text-sm text-muted-foreground">No matching holdings in sg_family_holdings_import.</div>
         ) : (
           <div className="overflow-x-auto -mx-5">
             <table className="w-full text-[12px]">
@@ -67,8 +79,8 @@ export function DrillDownPage({
                   <th className="text-left font-semibold py-2.5">Asset class</th>
                   <th className="text-left font-semibold py-2.5">Product</th>
                   <th className="text-left font-semibold py-2.5">Entity</th>
-                  <th className="text-right font-semibold py-2.5">Invested (₹)</th>
-                  <th className="text-right font-semibold py-2.5">Current (₹)</th>
+                  <th className="text-right font-semibold py-2.5">Invested</th>
+                  <th className="text-right font-semibold py-2.5">Current</th>
                   <th className="text-right font-semibold px-5 py-2.5">Gain</th>
                 </tr>
               </thead>
@@ -86,7 +98,7 @@ export function DrillDownPage({
                         <td className="py-3 font-medium text-foreground">{r.security_name}</td>
                         <td className="py-3 text-muted-foreground">{r.asset_class}</td>
                         <td className="py-3 text-muted-foreground">{r.product_type}</td>
-                        <td className="py-3 text-muted-foreground">{r.entity_name ?? "—"}</td>
+                        <td className="py-3 text-muted-foreground">{r.entity_name ?? "SG Family Consolidated"}</td>
                         <td className="py-3 text-right tabular">{inr(inv, { compact: true })}</td>
                         <td className="py-3 text-right font-semibold tabular">{inr(r.current_value ?? 0, { compact: true })}</td>
                         <td className={`px-5 py-3 text-right font-semibold tabular ${gp >= 0 ? "text-success" : "text-destructive"}`}>
