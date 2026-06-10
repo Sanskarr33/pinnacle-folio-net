@@ -111,7 +111,7 @@ export function DrillDownPage({
         {isLoading ? (
           <div className="py-12 text-center text-sm text-muted-foreground">Loading holdings…</div>
         ) : rows.length === 0 ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">No matching holdings in sg_family_holdings_import.</div>
+          <div className="py-12 text-center text-sm text-muted-foreground">No matching holdings for this filter.</div>
         ) : (
           <div className="overflow-x-auto -mx-5">
             <table className="w-full text-[12px]">
