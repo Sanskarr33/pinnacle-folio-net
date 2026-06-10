@@ -9,8 +9,8 @@ export const Route = createFileRoute("/ulips")({
   component: () => (
     <DrillDownPage
       title="ULIPs"
-      description="Unit Linked Insurance Plans and their current fund values."
-      filter={{ field: "product_type", values: ["ULIP", "ULIPs", "Unit Linked"] }}
+      description="Unit Linked Insurance Plans and current fund values."
+      filter={{ kind: "contains", fields: ["product_type", "security_name"], keywords: ["ULIP"] }}
     />
   ),
 });
