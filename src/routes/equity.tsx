@@ -10,7 +10,7 @@ export const Route = createFileRoute("/equity")({
     <DrillDownPage
       title="Direct Equity"
       description="Listed stocks held directly across all entities."
-      filter={{ field: "product_type", values: ["Direct Equity", "Equity", "Stocks"] }}
+      filter={{ kind: "contains", fields: ["product_type", "asset_class"], keywords: ["Direct Equity", "Equity Shares"] }}
     />
   ),
 });

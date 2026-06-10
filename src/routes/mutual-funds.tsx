@@ -10,7 +10,7 @@ export const Route = createFileRoute("/mutual-funds")({
     <DrillDownPage
       title="Mutual Funds"
       description="All mutual fund holdings filtered from sg_family_holdings_import."
-      filter={{ field: "product_type", values: ["Mutual Fund", "Mutual Funds", "MF"] }}
+      filter={{ kind: "contains", fields: ["product_type", "asset_class", "security_name"], keywords: ["Mutual Fund", "Mutual Funds"] }}
     />
   ),
 });
