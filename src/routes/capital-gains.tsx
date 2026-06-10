@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PagePlaceholder } from "@/components/PagePlaceholder";
+import { DrillDownPage } from "@/components/DrillDownPage";
 
 export const Route = createFileRoute("/capital-gains")({
   head: () => ({
@@ -8,5 +8,11 @@ export const Route = createFileRoute("/capital-gains")({
       { name: "description", content: "Realised STCG/LTCG by entity for tax filing, with grandfathering applied." },
     ],
   }),
-  component: () => <PagePlaceholder title="Capital Gains" description="Realised STCG/LTCG by entity for tax filing, with grandfathering applied." />,
+  component: () => (
+    <DrillDownPage
+      title="Capital Gains"
+      description="Realised STCG/LTCG by entity, sourced from portfolio_detailed_holdings."
+      filter={{ kind: "all" }}
+    />
+  ),
 });
