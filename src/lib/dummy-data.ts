@@ -168,7 +168,6 @@ export const marketTickers: MarketTicker[] = [
 export function inr(amount: number, opts?: { compact?: boolean }) {
   const cr = amount / 10000000;
   if (opts?.compact) {
-    if (cr >= 100) return `₹${cr.toFixed(0)} Cr`;
     return `₹${cr.toFixed(2)} Cr`;
   }
   return `₹${cr.toLocaleString("en-IN", { maximumFractionDigits: 2 })} Cr`;
