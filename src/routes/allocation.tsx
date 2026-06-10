@@ -12,6 +12,8 @@ export const Route = createFileRoute("/allocation")({
       title="Asset Allocation"
       description="Full book grouped by asset_class, sourced from sg_family_holdings_import."
       filter={{ kind: "all" }}
+      source="summary"
+
       extra={<div className="max-w-md"><AssetAllocationDonut /></div>}
     />
   ),
