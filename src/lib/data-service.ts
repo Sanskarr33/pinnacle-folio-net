@@ -38,10 +38,11 @@ async function getRawHoldings(): Promise<SGHoldingRow[] | null> {
   if (_rawHoldingsPromise && now < _rawHoldingsExpiry) return _rawHoldingsPromise;
 
   _rawHoldingsExpiry = now + CACHE_TTL;
-  _rawHoldingsPromise = supabase
-    .from("sg_family_holdings_import")
-    .select("*")
-    .then(({ data, error }) => {
+  _rawHoldingsPromise = (async () => {
+    try {
+      const { data, error } = await supabase
+        .from("sg_family_holdings_import")
+        .select("*");
       if (error) {
         console.error("[data-service] sg_family_holdings_import fetch error:", error.message);
         _rawHoldingsPromise = null;
@@ -55,13 +56,13 @@ async function getRawHoldings(): Promise<SGHoldingRow[] | null> {
         return null;
       }
       return data as SGHoldingRow[];
-    })
-    .catch((err: unknown) => {
+    } catch (err) {
       console.error("[data-service] getRawHoldings exception:", err);
       _rawHoldingsPromise = null;
       _rawHoldingsExpiry = 0;
       return null;
-    });
+    }
+  })();
 
   return _rawHoldingsPromise;
 }
