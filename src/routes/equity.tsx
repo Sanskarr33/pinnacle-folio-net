@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+<<<<<<< HEAD
 import { useQuery } from "@tanstack/react-query";
 import { getDetailedHoldings } from "@/lib/data-service";
 import { HoldingsKpiBar } from "@/components/holdings/HoldingsKpiBar";
@@ -12,6 +13,22 @@ export const Route = createFileRoute("/equity")({
     ],
   }),
   component: DirectEquityPage,
+=======
+import { DrillDownPage } from "@/components/DrillDownPage";
+
+export const Route = createFileRoute("/equity")({
+  head: () => ({ meta: [
+    { title: "Direct Equity — SG Family Wealth" },
+    { name: "description", content: "Direct equity stock holdings across the family." },
+  ]}),
+  component: () => (
+    <DrillDownPage
+      title="Direct Equity"
+      description="Listed stocks held directly across all entities."
+      filter={{ kind: "contains", fields: ["product_type", "asset_class"], keywords: ["Direct Equity", "Equity Shares"] }}
+    />
+  ),
+>>>>>>> 9ef70e5e4e15281c8fc57e9e1b6185ff70a8c0f4
 });
 
 function DirectEquityPage() {

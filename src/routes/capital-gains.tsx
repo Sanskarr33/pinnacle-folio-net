@@ -1,8 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
+<<<<<<< HEAD
 import { useQuery } from "@tanstack/react-query";
 import { getDetailedHoldings } from "@/lib/data-service";
 import { HoldingsKpiBar } from "@/components/holdings/HoldingsKpiBar";
 import { HoldingsTable, COLS_CAPITAL_GAINS } from "@/components/holdings/HoldingsTable";
+=======
+import { DrillDownPage } from "@/components/DrillDownPage";
+>>>>>>> 9ef70e5e4e15281c8fc57e9e1b6185ff70a8c0f4
 
 export const Route = createFileRoute("/capital-gains")({
   head: () => ({
@@ -11,7 +15,17 @@ export const Route = createFileRoute("/capital-gains")({
       { name: "description", content: "Realised STCG/LTCG by entity for tax filing, with grandfathering applied." },
     ],
   }),
+<<<<<<< HEAD
   component: CapitalGainsPage,
+=======
+  component: () => (
+    <DrillDownPage
+      title="Capital Gains"
+      description="Realised STCG/LTCG by entity, sourced from portfolio_detailed_holdings."
+      filter={{ kind: "all" }}
+    />
+  ),
+>>>>>>> 9ef70e5e4e15281c8fc57e9e1b6185ff70a8c0f4
 });
 
 function CapitalGainsPage() {

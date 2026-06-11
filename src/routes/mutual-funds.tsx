@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+<<<<<<< HEAD
 import { useQuery } from "@tanstack/react-query";
 import { getDetailedHoldings } from "@/lib/data-service";
 import { HoldingsKpiBar } from "@/components/holdings/HoldingsKpiBar";
@@ -12,6 +13,22 @@ export const Route = createFileRoute("/mutual-funds")({
     ],
   }),
   component: MutualFundsPage,
+=======
+import { DrillDownPage } from "@/components/DrillDownPage";
+
+export const Route = createFileRoute("/mutual-funds")({
+  head: () => ({ meta: [
+    { title: "Mutual Funds — SG Family Wealth" },
+    { name: "description", content: "Mutual fund holdings across the family." },
+  ]}),
+  component: () => (
+    <DrillDownPage
+      title="Mutual Funds"
+      description="All mutual fund holdings filtered from sg_family_holdings_import."
+      filter={{ kind: "contains", fields: ["product_type", "asset_class", "security_name"], keywords: ["Mutual Fund", "Mutual Funds"] }}
+    />
+  ),
+>>>>>>> 9ef70e5e4e15281c8fc57e9e1b6185ff70a8c0f4
 });
 
 function MutualFundsPage() {

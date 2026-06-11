@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+<<<<<<< HEAD
 import { useQuery } from "@tanstack/react-query";
 import { getDetailedHoldings } from "@/lib/data-service";
 import { HoldingsKpiBar } from "@/components/holdings/HoldingsKpiBar";
@@ -12,6 +13,22 @@ export const Route = createFileRoute("/aifs")({
     ],
   }),
   component: AifsPage,
+=======
+import { DrillDownPage } from "@/components/DrillDownPage";
+
+export const Route = createFileRoute("/aifs")({
+  head: () => ({ meta: [
+    { title: "AIFs — SG Family Wealth" },
+    { name: "description", content: "Alternative Investment Funds." },
+  ]}),
+  component: () => (
+    <DrillDownPage
+      title="AIFs"
+      description="Alternative Investment Funds — Category I/II/III commitments."
+      filter={{ kind: "contains", fields: ["product_type", "security_name"], keywords: ["AIF"] }}
+    />
+  ),
+>>>>>>> 9ef70e5e4e15281c8fc57e9e1b6185ff70a8c0f4
 });
 
 function AifsPage() {

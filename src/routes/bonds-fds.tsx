@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+<<<<<<< HEAD
 import { useQuery } from "@tanstack/react-query";
 import { getDetailedHoldings } from "@/lib/data-service";
 import { HoldingsKpiBar } from "@/components/holdings/HoldingsKpiBar";
@@ -12,6 +13,26 @@ export const Route = createFileRoute("/bonds-fds")({
     ],
   }),
   component: BondsFdsPage,
+=======
+import { DrillDownPage } from "@/components/DrillDownPage";
+
+export const Route = createFileRoute("/bonds-fds")({
+  head: () => ({ meta: [
+    { title: "Bonds & FDs — SG Family Wealth" },
+    { name: "description", content: "Debt and other fixed-income style investments." },
+  ]}),
+  component: () => (
+    <DrillDownPage
+      title="Bonds & FDs"
+      description="Debt and other investments: bonds, FDs, REITs, PPF and NPS."
+      filter={{
+        kind: "contains",
+        fields: ["product_type", "security_name"],
+        keywords: ["Bond", "FD", "Fixed Deposit", "Debt Bonds", "REIT", "PPF", "NPS"],
+      }}
+    />
+  ),
+>>>>>>> 9ef70e5e4e15281c8fc57e9e1b6185ff70a8c0f4
 });
 
 function BondsFdsPage() {

@@ -1,8 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
+<<<<<<< HEAD
 import { useQuery } from "@tanstack/react-query";
 import { getDetailedHoldings } from "@/lib/data-service";
 import { HoldingsKpiBar } from "@/components/holdings/HoldingsKpiBar";
 import { HoldingsTable, COLS_EXIT_LOAD } from "@/components/holdings/HoldingsTable";
+=======
+import { DrillDownPage } from "@/components/DrillDownPage";
+>>>>>>> 9ef70e5e4e15281c8fc57e9e1b6185ff70a8c0f4
 
 export const Route = createFileRoute("/exit-load")({
   head: () => ({
@@ -11,7 +15,21 @@ export const Route = createFileRoute("/exit-load")({
       { name: "description", content: "Lots approaching exit-load expiry across MFs, PMS and AIFs." },
     ],
   }),
+<<<<<<< HEAD
   component: ExitLoadPage,
+=======
+  component: () => (
+    <DrillDownPage
+      title="Exit Load Tracker"
+      description="Lots approaching exit-load expiry across MFs, PMS and AIFs, sourced from portfolio_detailed_holdings."
+      filter={{
+        kind: "contains",
+        fields: ["product_type", "asset_class", "security_name"],
+        keywords: ["Mutual Fund", "MF", "PMS", "AIF"],
+      }}
+    />
+  ),
+>>>>>>> 9ef70e5e4e15281c8fc57e9e1b6185ff70a8c0f4
 });
 
 // Exit load values considered "no exit load" — filtered out

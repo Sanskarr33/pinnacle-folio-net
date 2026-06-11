@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+<<<<<<< HEAD
 import { useQuery } from "@tanstack/react-query";
 import { getDetailedHoldings } from "@/lib/data-service";
 import { HoldingsKpiBar } from "@/components/holdings/HoldingsKpiBar";
@@ -12,6 +13,22 @@ export const Route = createFileRoute("/international")({
     ],
   }),
   component: InternationalPage,
+=======
+import { DrillDownPage } from "@/components/DrillDownPage";
+
+export const Route = createFileRoute("/international")({
+  head: () => ({ meta: [
+    { title: "International — SG Family Wealth" },
+    { name: "description", content: "Offshore and international investment holdings." },
+  ]}),
+  component: () => (
+    <DrillDownPage
+      title="International"
+      description="Offshore equity, funds, and other international exposure."
+      filter={{ kind: "contains", fields: ["product_type", "asset_class", "security_name"], keywords: ["International"] }}
+    />
+  ),
+>>>>>>> 9ef70e5e4e15281c8fc57e9e1b6185ff70a8c0f4
 });
 
 function InternationalPage() {

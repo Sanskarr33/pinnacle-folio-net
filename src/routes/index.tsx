@@ -84,7 +84,7 @@ function PageTitle() {
       <div>
         <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-medium">Family Office · Principal View</p>
         <h1 className="text-[28px] font-semibold tracking-tight text-foreground mt-1">Good afternoon, Suresh</h1>
-        <p className="text-sm text-muted-foreground mt-1">Here's the consolidated position across all SG family entities as of close, 06 June 2026.</p>
+        <p className="text-sm text-muted-foreground mt-1">Here's the consolidated position across all SG family entities as of close, 09 June 2026.</p>
       </div>
       <div className="flex items-center gap-2">
         <button className="text-[12px] font-medium px-3.5 h-9 rounded-md border border-border bg-surface hover:bg-secondary text-foreground transition-colors">
