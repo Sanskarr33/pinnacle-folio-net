@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-<<<<<<< HEAD
 import { useQuery } from "@tanstack/react-query";
 import { getDetailedHoldings } from "@/lib/data-service";
 import { HoldingsKpiBar } from "@/components/holdings/HoldingsKpiBar";
@@ -13,22 +12,6 @@ export const Route = createFileRoute("/etfs")({
     ],
   }),
   component: EtfsPage,
-=======
-import { DrillDownPage } from "@/components/DrillDownPage";
-
-export const Route = createFileRoute("/etfs")({
-  head: () => ({ meta: [
-    { title: "ETFs — SG Family Wealth" },
-    { name: "description", content: "Exchange-traded funds across Indian and international exchanges." },
-  ]}),
-  component: () => (
-    <DrillDownPage
-      title="ETFs"
-      description="Index, gold, and thematic ETFs filtered from sg_family_holdings_import."
-      filter={{ kind: "contains", fields: ["product_type", "security_name"], keywords: ["ETF"] }}
-    />
-  ),
->>>>>>> 9ef70e5e4e15281c8fc57e9e1b6185ff70a8c0f4
 });
 
 function EtfsPage() {

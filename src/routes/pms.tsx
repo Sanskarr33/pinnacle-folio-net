@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-<<<<<<< HEAD
 import { useQuery } from "@tanstack/react-query";
 import { getDetailedHoldings } from "@/lib/data-service";
 import { HoldingsKpiBar } from "@/components/holdings/HoldingsKpiBar";
@@ -13,22 +12,6 @@ export const Route = createFileRoute("/pms")({
     ],
   }),
   component: PmsPage,
-=======
-import { DrillDownPage } from "@/components/DrillDownPage";
-
-export const Route = createFileRoute("/pms")({
-  head: () => ({ meta: [
-    { title: "PMS — SG Family Wealth" },
-    { name: "description", content: "Portfolio Management Service mandates." },
-  ]}),
-  component: () => (
-    <DrillDownPage
-      title="PMS"
-      description="Portfolio Management Service mandates and current values."
-      filter={{ kind: "contains", fields: ["product_type", "security_name"], keywords: ["PMS"] }}
-    />
-  ),
->>>>>>> 9ef70e5e4e15281c8fc57e9e1b6185ff70a8c0f4
 });
 
 function PmsPage() {

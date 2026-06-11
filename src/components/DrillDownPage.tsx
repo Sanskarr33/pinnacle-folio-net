@@ -60,10 +60,8 @@ export function DrillDownPage({
     source === "summary"
       ? (summary ?? [])
       : Array.isArray(detailed) && detailed.length > 0
-        ? detailed
-        : detailed === null
-          ? (summary ?? [])
-          : []; // detailed === [] → empty live table
+        ? (detailed as unknown as SGHoldingRow[])
+        : (summary ?? []);
 
   const rows = all.filter((r) => matchesFilter(r, filter));
 

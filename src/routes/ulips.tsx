@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-<<<<<<< HEAD
 import { useQuery } from "@tanstack/react-query";
 import { getDetailedHoldings } from "@/lib/data-service";
 import { HoldingsKpiBar } from "@/components/holdings/HoldingsKpiBar";
@@ -13,22 +12,6 @@ export const Route = createFileRoute("/ulips")({
     ],
   }),
   component: UlipsPage,
-=======
-import { DrillDownPage } from "@/components/DrillDownPage";
-
-export const Route = createFileRoute("/ulips")({
-  head: () => ({ meta: [
-    { title: "ULIPs — SG Family Wealth" },
-    { name: "description", content: "Unit Linked Insurance Plans across family members." },
-  ]}),
-  component: () => (
-    <DrillDownPage
-      title="ULIPs"
-      description="Unit Linked Insurance Plans and current fund values."
-      filter={{ kind: "contains", fields: ["product_type", "security_name"], keywords: ["ULIP"] }}
-    />
-  ),
->>>>>>> 9ef70e5e4e15281c8fc57e9e1b6185ff70a8c0f4
 });
 
 function UlipsPage() {

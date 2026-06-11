@@ -68,7 +68,7 @@ function getCellText(row: PortfolioHolding, col: ColDef): string {
   if (col.key === "display_name") {
     return row.security_name || row.scheme_name || "—";
   }
-  const v = (row as Record<string, unknown>)[col.key];
+  const v = (row as unknown as Record<string, unknown>)[col.key];
   if (v == null || v === "") return "N/A";
 
   switch (col.format) {
@@ -92,7 +92,7 @@ function getCellText(row: PortfolioHolding, col: ColDef): string {
 function cellColor(row: PortfolioHolding, col: ColDef, val: string): string {
   if (val === "N/A") return "text-muted-foreground/60";
   if (col.format === "cr_signed" || col.format === "pct_signed") {
-    const v = (row as Record<string, unknown>)[col.key] as number | null;
+    const v = (row as unknown as Record<string, unknown>)[col.key] as number | null;
     if (v == null) return "";
     return v >= 0 ? "text-emerald-600" : "text-destructive";
   }
