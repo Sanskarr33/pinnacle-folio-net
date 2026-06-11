@@ -38,15 +38,12 @@ export async function getAllHoldings(): Promise<SGHoldingRow[] | null> {
 }
 
 // Detailed holdings — separate table for product drill-downs.
-// Returns:
-//   null  → Supabase not configured OR fetch error (caller may fall back)
-//   []    → connection OK, table empty (caller MUST show empty state, NOT fall back)
-//   rows  → live detailed rows
-let _detailedPromise: Promise<SGHoldingRow[] | null> | null = null;
+// Returns PortfolioHolding[]: empty array on missing-config / fetch error / empty table.
+let _detailedPromise: Promise<PortfolioHolding[]> | null = null;
 let _detailedExpiry = 0;
 
-export async function getDetailedHoldings(): Promise<SGHoldingRow[] | null> {
-  if (!supabase) return null;
+export async function getDetailedHoldings(): Promise<PortfolioHolding[]> {
+  if (!supabase) return [];
   const now = Date.now();
   if (_detailedPromise && now < _detailedExpiry) return _detailedPromise;
   _detailedExpiry = now + CACHE_TTL;
@@ -59,14 +56,14 @@ export async function getDetailedHoldings(): Promise<SGHoldingRow[] | null> {
         console.error("[data-service] portfolio_detailed_holdings fetch error:", error.message);
         _detailedPromise = null;
         _detailedExpiry = 0;
-        return null;
+        return [];
       }
-      return (data ?? []) as SGHoldingRow[];
+      return (data ?? []) as PortfolioHolding[];
     } catch (err) {
       console.error("[data-service] getDetailedHoldings exception:", err);
       _detailedPromise = null;
       _detailedExpiry = 0;
-      return null;
+      return [];
     }
   })();
   return _detailedPromise;
