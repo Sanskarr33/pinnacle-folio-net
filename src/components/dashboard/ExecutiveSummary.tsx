@@ -1,14 +1,33 @@
-import { TrendingUp, TrendingDown, Wallet, Activity, Target } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Activity, Target, AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getFamilyKpis } from "@/lib/data-service";
-import { familyKpis as fallback, inr, pct } from "@/lib/dummy-data";
+import { inr, pct } from "@/lib/dummy-data";
 
 export function ExecutiveSummary() {
-  const { data: k = fallback } = useQuery({
+  const { data: k, isError, error, isLoading } = useQuery({
     queryKey: ["familyKpis"],
     queryFn: getFamilyKpis,
     staleTime: 5 * 60 * 1000,
+    retry: 0,
   });
+
+  if (isError) {
+    return (
+      <div className="rounded-xl border border-destructive/40 bg-destructive/10 text-destructive p-6 flex items-start gap-3">
+        <AlertTriangle className="h-5 w-5 mt-0.5" />
+        <div>
+          <p className="text-sm font-semibold">Supabase connection error</p>
+          <p className="text-xs mt-1 opacity-80">
+            Could not load <code>sg_family_holdings_import</code>. {error instanceof Error ? error.message : ""}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading || !k) {
+    return <div className="h-[220px] rounded-xl border border-border bg-muted/20 animate-pulse" />;
+  }
 
   return (
     <div className="relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-navy via-navy to-[oklch(0.22_0.06_265)] text-navy-foreground shadow-elevated">

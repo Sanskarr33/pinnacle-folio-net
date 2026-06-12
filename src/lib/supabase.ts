@@ -1,19 +1,27 @@
-// Supabase client — only instantiated when VITE_SUPABASE_URL and
-// VITE_SUPABASE_ANON_KEY are present in the environment.
-// Without them the app runs entirely on dummy-data.ts (no errors).
-//
-// To activate Supabase:
-//   1. Create a project at https://supabase.com
-//   2. Add to .env.local:
-//        VITE_SUPABASE_URL=https://your-project.supabase.co
-//        VITE_SUPABASE_ANON_KEY=your-anon-key
-//   3. Run the SQL schema from the project README
-//   4. Import your Excel CSVs via Supabase Dashboard → Table Editor
-//   5. Restart the dev server — the app switches automatically
+// Supabase client for the user's existing project (NOT Lovable Cloud).
+// Reads VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY from env, with the
+// user-provided publishable values as a fallback so the dashboard always
+// targets the correct project even if .env is not set in this environment.
 
 import { createClient } from "@supabase/supabase-js";
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const FALLBACK_URL = "https://bdjwhgwoztdocwdvzrem.supabase.co";
+const FALLBACK_ANON_KEY = "sb_publishable_dvvYgNznrT8fMI3ZwCw3cg_y0YNBgU4";
 
-export const supabase = url && key ? createClient(url, key) : null;
+const envUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+
+const url = envUrl || FALLBACK_URL;
+const key = envKey || FALLBACK_ANON_KEY;
+
+if (typeof window !== "undefined") {
+  // Temporary debug logs — remove once verified.
+  // eslint-disable-next-line no-console
+  console.log("[supabase] VITE_SUPABASE_URL exists:", !!envUrl);
+  // eslint-disable-next-line no-console
+  console.log("[supabase] VITE_SUPABASE_ANON_KEY exists:", !!envKey);
+  // eslint-disable-next-line no-console
+  console.log("[supabase] using URL:", url);
+}
+
+export const supabase = createClient(url, key);
