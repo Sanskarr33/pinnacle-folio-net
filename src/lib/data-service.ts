@@ -70,7 +70,10 @@ export async function getDetailedHoldings(): Promise<PortfolioHolding[]> {
 }
 
 async function getRawHoldings(): Promise<SGHoldingRow[] | null> {
-  if (!supabase) return null;
+  if (!supabase) {
+    console.error("[data-service] Supabase client not configured");
+    return null;
+  }
   const now = Date.now();
   if (_rawHoldingsPromise && now < _rawHoldingsExpiry) return _rawHoldingsPromise;
 
@@ -86,13 +89,17 @@ async function getRawHoldings(): Promise<SGHoldingRow[] | null> {
         _rawHoldingsExpiry = 0;
         return null;
       }
-      if (!data || data.length === 0) {
-        console.warn("[data-service] sg_family_holdings_import returned 0 rows — using dummy data");
+      const rows = (data ?? []) as SGHoldingRow[];
+      console.log("[data-service] sg_family_holdings_import rows returned:", rows.length);
+      const rawSum = rows.reduce((s, r) => s + (r.current_value ?? 0), 0);
+      console.log("[data-service] raw current_value sum:", rawSum);
+      console.log("[data-service] displayed AUM in ₹ Cr:", (rawSum / 10_000_000).toFixed(2));
+      if (rows.length === 0) {
         _rawHoldingsPromise = null;
         _rawHoldingsExpiry = 0;
         return null;
       }
-      return data as SGHoldingRow[];
+      return rows;
     } catch (err) {
       console.error("[data-service] getRawHoldings exception:", err);
       _rawHoldingsPromise = null;
