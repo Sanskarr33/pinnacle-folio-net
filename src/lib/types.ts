@@ -130,9 +130,20 @@ export interface SGHoldingRow {
   unrealised_gain: number;  // ₹ rupees — source for unrealised P/L
   // Optional columns — present in some exports
   entity_name?: string | null;
+  account_name?: string | null;
   quantity?: number | null;
-  ltp?: number | null;           // last traded price (₹)
-  gain_pct?: number | null;      // unrealised gain % (derived if absent)
+  ltp?: number | null;           // last traded price (₹) — legacy alias
+  current_price?: number | null;
+  average_cost?: number | null;
+  gain_pct?: number | null;      // legacy alias
+  gain_percent?: number | null;  // unrealised gain %
+  allocation_percent?: number | null;
+  advisor_name?: string | null;
   adviser?: string | null;
+  category?: string | null;
   isin?: string | null;
+  ticker?: string | null;
+  as_on_date?: string | null;
+  source_sheet?: string | null;
+  source_row?: number | null;
 }

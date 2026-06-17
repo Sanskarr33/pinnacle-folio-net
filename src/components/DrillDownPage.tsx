@@ -132,7 +132,7 @@ export function DrillDownPage({
                   .map((r, i) => {
                     const inv = r.invested_value ?? 0;
                     const un = r.unrealised_gain ?? 0;
-                    const gp = r.gain_pct != null ? r.gain_pct : inv > 0 ? (un / inv) * 100 : 0;
+                    const gp = r.gain_percent != null ? r.gain_percent : inv > 0 ? (un / inv) * 100 : 0;
                     return (
                       <tr key={`${r.security_name}-${i}`} className="border-b border-border/60 hover:bg-secondary/40 transition-colors">
                         <td className="px-5 py-3 text-muted-foreground tabular">{String(i + 1).padStart(2, "0")}</td>
