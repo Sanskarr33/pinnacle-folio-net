@@ -1,4 +1,5 @@
 # TanStack Start SSR — nitro bundles server fn to .output/server, statics to .output/public
+# deploy trigger v2
 [build]
   command = "npm install && npm run build"
   publish = ".output/public"
