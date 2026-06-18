@@ -1,3 +1,4 @@
+# TanStack Start SSR — nitro bundles server fn to .output/server, statics to .output/public
 [build]
   command = "npm install && npm run build"
   publish = ".output/public"
