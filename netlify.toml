@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build"
+  command = "npm install && npm run build"
   publish = ".output/public"
 
 [build.environment]
@@ -7,7 +7,7 @@
   NITRO_PRESET = "netlify"
 
 [functions]
-  directory = ".netlify/functions"
+  directory = ".output/server"
 
 [[redirects]]
   from = "/*"
