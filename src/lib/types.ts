@@ -3,15 +3,16 @@
 // and Supabase query mappers must conform to these shapes.
 
 export interface FamilyKpis {
-  totalAUM: number;       // ₹ in rupees
-  dayChange: number;      // ₹ in rupees
-  dayChangePct: number;   // e.g. 0.142
-  unrealisedGain: number; // ₹ in rupees
-  unrealisedGainPct: number;
-  realisedGain: number;   // ₹ in rupees
-  realisedGainPct: number;
-  xirr: number;           // e.g. 17.8
-  invested: number;       // ₹ in rupees
+  totalAUM: number;            // ₹ in rupees — from sg_family_holdings_import
+  invested: number;            // ₹ in rupees — from sg_family_holdings_import
+  unrealisedGain: number;      // ₹ in rupees — from sg_family_holdings_import
+  unrealisedGainPct: number;   // derived from invested/unrealisedGain
+  // Not available in holdings table — null when data source is live Supabase
+  dayChange: number | null;
+  dayChangePct: number | null;
+  realisedGain: number | null;
+  realisedGainPct: number | null;
+  xirr: number | null;
 }
 
 export interface AssetClass {

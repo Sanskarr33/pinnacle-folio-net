@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getProductExposure } from "@/lib/data-service";
-import { productExposure as fallback, inr } from "@/lib/dummy-data";
+import { inr } from "@/lib/dummy-data";
 import { Card } from "./Card";
 import { TrendingUp } from "lucide-react";
 
@@ -17,11 +17,36 @@ const productColors: Record<string, string> = {
 };
 
 export function ProductCards() {
-  const { data: products = fallback } = useQuery({
+  const { data: products, isLoading, isError } = useQuery({
     queryKey: ["productExposure"],
     queryFn: getProductExposure,
     staleTime: 5 * 60 * 1000,
+    retry: 1,
   });
+
+  if (isLoading) {
+    return (
+      <Card
+        title="Product allocation"
+        subtitle="Exposure by investment vehicle"
+        right={<button className="text-[11.5px] text-muted-foreground font-medium">View all →</button>}
+      >
+        <div className="py-8 text-center text-sm text-muted-foreground animate-pulse">Loading…</div>
+      </Card>
+    );
+  }
+
+  if (isError || !products) {
+    return (
+      <Card
+        title="Product allocation"
+        subtitle="Exposure by investment vehicle"
+        right={<button className="text-[11.5px] text-muted-foreground font-medium">View all →</button>}
+      >
+        <div className="py-8 text-center text-sm text-destructive">Supabase connection error</div>
+      </Card>
+    );
+  }
 
   return (
     <Card
