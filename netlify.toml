@@ -1,14 +1,9 @@
-# TanStack Start SSR — nitro bundles server fn to .output/server, statics to .output/public
-# deploy trigger v2
 [build]
   command = "npm install && npm run build"
-  publish = ".output/public"
+  publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20"
-
-[functions]
-  directory = ".output/server"
 
 [[redirects]]
   from = "/*"
