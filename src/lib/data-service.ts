@@ -33,8 +33,33 @@ let _rawHoldingsPromise: Promise<SGHoldingRow[] | null> | null = null;
 let _rawHoldingsExpiry = 0;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+// Call this before invalidating React Query caches so the next fetch hits Supabase.
+export function invalidateCache(): void {
+  _rawHoldingsPromise = null;
+  _rawHoldingsExpiry = 0;
+  _detailedPromise = null;
+  _detailedExpiry = 0;
+}
+
 export async function getAllHoldings(): Promise<SGHoldingRow[] | null> {
   return getRawHoldings();
+}
+
+export async function getLastAsOnDate(): Promise<string | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from("sg_family_holdings_import")
+      .select("as_on_date")
+      .not("as_on_date", "is", null)
+      .order("as_on_date", { ascending: false })
+      .limit(1)
+      .single();
+    if (error || !data) return null;
+    return (data as { as_on_date: string }).as_on_date;
+  } catch {
+    return null;
+  }
 }
 
 // Detailed holdings — separate table for product drill-downs.

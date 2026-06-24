@@ -1,1 +1,5 @@
-project_id = "pjduslfcpzqpnmrvlyie"
+project_id = "bdjwhgwoztdocwdvzrem"
+
+[functions.update-prices]
+  schedule = "30 13 * * 1-5"
+  # Runs at 13:30 UTC = 7:00 PM IST, weekdays only (after NSE market close)
