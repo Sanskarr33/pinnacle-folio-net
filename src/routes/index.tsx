@@ -115,9 +115,21 @@ function PageTitle() {
   async function handleRefresh() {
     setIsRefreshing(true);
     try {
-      const res = await fetch(EDGE_FN_URL, { method: "POST" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const res = await fetch(EDGE_FN_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": "sb_publishable_dvvYgNznrT8fMI3ZwCw3cg_y0YNBgU4",
+          "Authorization": "Bearer sb_publishable_dvvYgNznrT8fMI3ZwCw3cg_y0YNBgU4",
+        },
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        console.error("[refresh] edge function error:", res.status, body);
+        throw new Error(`HTTP ${res.status}`);
+      }
       const json = await res.json() as { updated?: number };
+      console.log("[refresh] result:", json);
       const now = new Date().toLocaleTimeString("en-IN", {
         hour: "2-digit", minute: "2-digit",
       });
@@ -126,7 +138,8 @@ function PageTitle() {
       invalidateCache();
       await queryClient.invalidateQueries();
       toast.success(`Prices updated — ${json.updated ?? 0} holdings refreshed`);
-    } catch {
+    } catch (err) {
+      console.error("[refresh] failed:", err);
       toast.error("Failed to refresh prices. Please try again.");
     } finally {
       setIsRefreshing(false);

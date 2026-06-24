@@ -1,16 +1,73 @@
-/// <reference types="https://esm.sh/@supabase/functions-js/edge-runtime.d.ts" />
+// @ts-nocheck — Deno runtime; URL imports and Deno globals are not valid Node/TS
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const AMFI_URL   = 'https://www.amfiindia.com/spages/NAVAll.txt'
 const YF_BASE    = 'https://query1.finance.yahoo.com/v8/finance/chart'
-const BATCH_SIZE = 10  // concurrent Yahoo Finance fetches
+const BATCH_SIZE = 10
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+}
+
+// ---- Abbreviation expansion -----------------------------------------------
+function expandAbbr(s: string): string {
+  return s
+    .replace(/\bpru\b/gi,     'prudential')
+    .replace(/\bopp\b/gi,     'opportunities')
+    .replace(/\bfin\b/gi,     'financial')
+    .replace(/\bserv\b/gi,    'services')
+    .replace(/\btech\b/gi,    'technology')
+    .replace(/\beq\b/gi,      'equity')
+    .replace(/flexicap/gi,    'flexi cap')
+    .replace(/largecap/gi,    'large cap')
+    .replace(/midcap/gi,      'mid cap')
+    .replace(/smallcap/gi,    'small cap')
+    .replace(/multicap/gi,    'multi cap')
+    .replace(/bluechip/gi,    'blue chip')
+}
+
+// ---- Noise removal --------------------------------------------------------
+const NOISE_WORDS = [
+  'mutual funds', 'mutual fund', 'funds', 'fund',
+  'direct plan', 'regular plan', 'direct', 'regular',
+  'growth option', 'growth', 'idcw',
+  'dividend reinvestment', 'dividend payout', 'dividend',
+  'reinvestment', 'payout', 'option', 'scheme', 'series',
+  'dir', 'fof',
+  'ltd', 'limited', 'india', 'indian', 'the', 'and', 'an', 'of', 'a',
+]
+const NOISE_RE = new RegExp(
+  '\\b(' +
+    NOISE_WORDS
+      .slice()
+      .sort((a, b) => b.length - a.length)
+      .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      .join('|') +
+  ')\\b',
+  'g'
+)
+
+function normName(s: string): string {
+  return expandAbbr(s)
+    .toLowerCase()
+    .replace(/[-–—]/g, ' ')
+    .replace(NOISE_RE, ' ')
+    .replace(/[^a-z0-9 ]/g, '')
+    .replace(/ +/g, ' ')
+    .trim()
+}
+
+// ---- Types ----------------------------------------------------------------
+interface AmfiEntry { nav: number; isDirect: boolean; words: string[] }
 
 interface Row {
   id: string
   security_name: string
   ticker: string | null
   quantity: number | null
-  average_cost: number | null   // purchase NAV — used for ratio method when units are missing
+  average_cost: number | null
   invested_value: number | null
   asset_class: string
 }
@@ -22,6 +79,7 @@ interface PriceUpdates {
   gain_percent?: number
 }
 
+// ---- Yahoo Finance --------------------------------------------------------
 async function fetchYFPrice(ticker: string): Promise<number | null> {
   try {
     const res = await fetch(`${YF_BASE}/${ticker}?interval=1d&range=1d`, {
@@ -30,13 +88,17 @@ async function fetchYFPrice(ticker: string): Promise<number | null> {
     if (!res.ok) return null
     const json = await res.json()
     return json?.chart?.result?.[0]?.meta?.regularMarketPrice ?? null
-  } catch {
-    return null
-  }
+  } catch { return null }
 }
 
-async function buildAmfiMap(): Promise<Map<string, number>> {
-  const map = new Map<string, number>()
+// ---- AMFI: one-pass build of inverted word index --------------------------
+async function buildAmfi(): Promise<{
+  wordIdx: Map<string, number[]>
+  entries: AmfiEntry[]
+}> {
+  const entries: AmfiEntry[] = []
+  const wordIdx  = new Map<string, number[]>()
+
   try {
     const text = await (await fetch(AMFI_URL)).text()
     for (const line of text.split('\n')) {
@@ -44,69 +106,124 @@ async function buildAmfiMap(): Promise<Map<string, number>> {
       if (parts.length < 6) continue
       const name = parts[3]?.trim()
       const nav  = parseFloat(parts[4])
-      if (name && !isNaN(nav) && nav > 0) map.set(name, nav)
+      if (!name || isNaN(nav) || nav <= 0) continue
+
+      const isDirect = name.toLowerCase().includes('direct')
+      const wordSet  = new Set(
+        normName(name).split(' ').filter(w => w.length > 2)
+      )
+      const idx = entries.length
+      entries.push({ nav, isDirect, words: [...wordSet] })
+
+      for (const w of wordSet) {
+        let arr = wordIdx.get(w)
+        if (!arr) { arr = []; wordIdx.set(w, arr) }
+        arr.push(idx)
+      }
     }
-  } catch { /* silently skip on network failure */ }
-  return map
+  } catch { /* skip on network failure */ }
+
+  return { wordIdx, entries }
 }
 
-// Matches the first 20 chars of security_name against AMFI scheme names.
-// Prefers Direct Plan when multiple schemes share the same prefix.
-function lookupAmfi(securityName: string, amfiMap: Map<string, number>): number | null {
-  const needle = securityName.trim().toLowerCase().slice(0, 20)
-  let directHit: number | null = null
-  let anyHit: number | null = null
-  for (const [name, nav] of amfiMap) {
-    if (name.toLowerCase().slice(0, 20) === needle) {
-      if (name.toLowerCase().includes('direct')) directHit = nav
-      else if (anyHit === null) anyHit = nav
+// ---- AMFI lookup ----------------------------------------------------------
+// v7: per-candidate sanity check (inherited from v6) + no closeness tiebreak.
+// The closeness tiebreak in v6 caused systematic regressions by picking IDCW
+// plan variants (lower NAV, "closer" to purchase price) over Growth plan
+// variants for well-performing funds. Removed in v7.
+// For the Growth vs IDCW disambiguation, DB names are engineered to include
+// the word "plan" which only appears in Growth option normNames.
+function amfiLookup(
+  securityName: string,
+  wordIdx: Map<string, number[]>,
+  entries: AmfiEntry[],
+  purchaseNav: number | null
+): number | null {
+  const needleWords = [
+    ...new Set(normName(securityName).split(' ').filter(w => w.length > 2))
+  ]
+  if (needleWords.length === 0) return null
+
+  const hitCount = new Map<number, number>()
+  for (const w of needleWords) {
+    for (const idx of wordIdx.get(w) ?? []) {
+      hitCount.set(idx, (hitCount.get(idx) ?? 0) + 1)
     }
   }
-  return directHit ?? anyHit
+
+  let bestDirectScore = 0; let bestDirectNav: number | null = null
+  let bestAnyScore    = 0; let bestAnyNav:    number | null = null
+
+  for (const [idx, hits] of hitCount) {
+    const overlapRatio = hits / needleWords.length
+    if (overlapRatio < 0.70) continue
+    const { nav, isDirect } = entries[idx]
+
+    // Per-candidate sanity: skip candidates whose NAV is >30× or <1/30 of
+    // the purchase NAV. Applied here (not post-selection) so a false-positive
+    // with an extreme NAV cannot block the correct fund.
+    if (purchaseNav !== null && purchaseNav > 0) {
+      const r = nav / purchaseNav
+      if (r > 30 || r < 0.033) continue
+    }
+
+    const score = Math.round(overlapRatio * 100)
+
+    if (isDirect) {
+      if (score > bestDirectScore) { bestDirectScore = score; bestDirectNav = nav }
+    } else {
+      if (score > bestAnyScore) { bestAnyScore = score; bestAnyNav = nav }
+    }
+  }
+
+  return bestDirectNav ?? bestAnyNav
 }
 
+// ---- Value computation ---------------------------------------------------
 function computeUpdates(price: number, row: Row): PriceUpdates {
   const updates: PriceUpdates = { current_price: price }
-
   let cv: number | null = null
 
   if (row.quantity != null) {
-    // Normal path: units × current price
     cv = row.quantity * price
   } else if (
     row.average_cost != null && row.average_cost > 0 &&
     row.invested_value != null && row.invested_value > 0
   ) {
-    // Ratio method for MF rows where units are not recorded:
-    // current_value = invested_value × (current_NAV / purchase_NAV)
     cv = row.invested_value * (price / row.average_cost)
   }
 
   if (cv != null) {
-    updates.current_value = cv
+    updates.current_value    = cv
     if (row.invested_value != null && row.invested_value > 0) {
       updates.unrealised_gain = cv - row.invested_value
       updates.gain_percent    = ((cv - row.invested_value) / row.invested_value) * 100
     }
   }
-
   return updates
 }
 
-Deno.serve(async (_req: Request) => {
+// ---- Main handler --------------------------------------------------------
+Deno.serve(async (req: Request) => {
+  // Preflight — browsers send OPTIONS before POST cross-origin
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   )
 
   const summary = {
-    updated:   0,
-    skipped:   0,
-    errors:    [] as string[],
-    timestamp: new Date().toISOString(),
+    updated:    0,
+    skipped:    0,
+    mf_matched: 0,
+    mf_missed:  0,
+    errors:     [] as string[],
+    timestamp:  new Date().toISOString(),
   }
 
-  // ── 1. Fetch rows from DB ──────────────────────────────────────────────────
   const [{ data: equityRows, error: eqErr }, { data: mfRows, error: mfErr }] =
     await Promise.all([
       supabase
@@ -123,28 +240,22 @@ Deno.serve(async (_req: Request) => {
   if (eqErr) summary.errors.push(`Row fetch (equity): ${eqErr.message}`)
   if (mfErr)  summary.errors.push(`Row fetch (MF): ${mfErr.message}`)
 
-  // ── 2. Yahoo Finance — fetch unique tickers in parallel batches ───────────
   const uniqueTickers = [
     ...new Set(
       ((equityRows ?? []) as Row[])
-        .map((r) => r.ticker)
+        .map(r => r.ticker)
         .filter((t): t is string => t != null)
     ),
   ]
   const priceMap = new Map<string, number>()
-
   for (let i = 0; i < uniqueTickers.length; i += BATCH_SIZE) {
     const batch  = uniqueTickers.slice(i, i + BATCH_SIZE)
     const prices = await Promise.all(batch.map(fetchYFPrice))
-    batch.forEach((t, idx) => {
-      if (prices[idx] != null) priceMap.set(t, prices[idx]!)
-    })
+    batch.forEach((t, j) => { if (prices[j] != null) priceMap.set(t, prices[j]!) })
   }
 
-  // ── 3. AMFI — download and parse NAV file ─────────────────────────────────
-  const amfiMap = await buildAmfiMap()
+  const { wordIdx, entries: amfiEntries } = await buildAmfi()
 
-  // ── 4. Collect pending updates ────────────────────────────────────────────
   type Pending = { id: string; updates: PriceUpdates; label: string }
   const pending: Pending[] = []
 
@@ -159,25 +270,33 @@ Deno.serve(async (_req: Request) => {
   }
 
   for (const row of (mfRows ?? []) as Row[]) {
-    const nav = lookupAmfi(row.security_name, amfiMap)
+    const purchaseNav =
+      (row.quantity != null && row.quantity > 0 &&
+       row.invested_value != null && row.invested_value > 0)
+        ? row.invested_value / row.quantity
+        : row.average_cost
+
+    const nav = amfiLookup(row.security_name, wordIdx, amfiEntries, purchaseNav)
     if (!nav) {
       summary.skipped++
+      summary.mf_missed++
+      summary.errors.push(`No AMFI NAV: ${row.security_name}`)
       continue
     }
+    summary.mf_matched++
     pending.push({ id: row.id, updates: computeUpdates(nav, row), label: row.security_name })
   }
 
-  // ── 5. Batch-update Supabase (20 rows per round) ──────────────────────────
   for (let i = 0; i < pending.length; i += 20) {
     const chunk = pending.slice(i, i + 20)
     const results = await Promise.all(
       chunk.map(({ id, updates }) =>
         supabase.from('sg_family_holdings_import').update(updates).eq('id', id)
-      ),
+      )
     )
-    results.forEach(({ error }: { error: { message: string } | null }, idx: number) => {
+    results.forEach(({ error }: { error: { message: string } | null }, j: number) => {
       if (error) {
-        summary.errors.push(`Update ${chunk[idx].label}: ${error.message}`)
+        summary.errors.push(`Update ${chunk[j].label}: ${error.message}`)
         summary.skipped++
       } else {
         summary.updated++
@@ -186,6 +305,6 @@ Deno.serve(async (_req: Request) => {
   }
 
   return new Response(JSON.stringify(summary, null, 2), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...corsHeaders },
   })
 })
