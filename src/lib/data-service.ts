@@ -31,7 +31,7 @@ import {
 
 let _rawHoldingsPromise: Promise<SGHoldingRow[] | null> | null = null;
 let _rawHoldingsExpiry = 0;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 30 * 1000; // 30 seconds — short enough that a manual Refresh Prices always hits Supabase
 
 // Call this before invalidating React Query caches so the next fetch hits Supabase.
 export function invalidateCache(): void {
@@ -249,6 +249,95 @@ export async function getTopHoldings(): Promise<Holding[]> {
       });
   }
   return topHoldings;
+}
+
+// ─── Consolidated view: one row per security name, summed across folios/lots ──
+// Used by the drill-down pages (equity, MF, ETF, PMS, AIF) so each security
+// appears once regardless of how many purchase lots or folios it has.
+
+export async function getConsolidatedHoldings(
+  assetClasses: string | string[],
+): Promise<PortfolioHolding[]> {
+  if (!supabase) return [];
+  const classes = Array.isArray(assetClasses) ? assetClasses : [assetClasses];
+  try {
+    const { data, error } = await supabase
+      .from("sg_family_holdings_import")
+      .select(
+        "security_name,asset_class,category,product_type," +
+        "quantity,invested_value,current_value,unrealised_gain," +
+        "gain_percent,gain_pct,allocation_percent",
+      )
+      .in("asset_class", classes)
+      .not("current_value", "is", null);
+
+    if (error || !data) {
+      if (error) console.error("[data-service] getConsolidatedHoldings error:", error.message);
+      return [];
+    }
+
+    // Group by security_name, summing numeric fields
+    const byName = new Map<string, {
+      security_name: string;
+      asset_class: string | null;
+      category: string | null;
+      product_type: string | null;
+      quantity: number;
+      invested_value: number;
+      current_value: number;
+      unrealised_gain: number;
+      allocation_percent: number;
+    }>();
+
+    for (const r of data as SGHoldingRow[]) {
+      const key = (r.security_name ?? "").trim();
+      if (!key) continue;
+      const g = byName.get(key);
+      if (g) {
+        g.quantity        += r.quantity           ?? 0;
+        g.invested_value  += r.invested_value     ?? 0;
+        g.current_value   += r.current_value      ?? 0;
+        g.unrealised_gain += r.unrealised_gain    ?? 0;
+        g.allocation_percent += r.allocation_percent ?? 0;
+      } else {
+        byName.set(key, {
+          security_name:    key,
+          asset_class:      r.asset_class   ?? null,
+          category:         r.category      ?? null,
+          product_type:     r.product_type  ?? null,
+          quantity:         r.quantity           ?? 0,
+          invested_value:   r.invested_value     ?? 0,
+          current_value:    r.current_value      ?? 0,
+          unrealised_gain:  r.unrealised_gain    ?? 0,
+          allocation_percent: r.allocation_percent ?? 0,
+        });
+      }
+    }
+
+    return Array.from(byName.values())
+      .sort((a, b) => b.current_value - a.current_value)
+      .map((g) => ({
+        report_section:     null,
+        asset_class:        g.asset_class,
+        category:           g.category,
+        product_type:       g.product_type,
+        security_name:      g.security_name,
+        scheme_name:        null,
+        current_value:      g.current_value,
+        invested_value:     g.invested_value,
+        unrealised_gain:    g.unrealised_gain,
+        gain_percent:       g.invested_value > 0
+          ? ((g.current_value - g.invested_value) / g.invested_value) * 100
+          : null,
+        allocation_percent: g.allocation_percent || null,
+        xirr:               null,
+        exit_load:          null,
+        holding_term:       null,
+      }));
+  } catch (err) {
+    console.error("[data-service] getConsolidatedHoldings exception:", err);
+    return [];
+  }
 }
 
 // ─── Not yet derived from holdings — remain on dummy data ─────────────────────
