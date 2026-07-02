@@ -263,13 +263,8 @@ export async function getConsolidatedHoldings(
   try {
     const { data, error } = await supabase
       .from("sg_family_holdings_import")
-      .select(
-        "security_name,asset_class,category,product_type," +
-        "quantity,invested_value,current_value,unrealised_gain," +
-        "gain_percent,gain_pct,allocation_percent",
-      )
-      .in("asset_class", classes)
-      .not("current_value", "is", null);
+      .select("*")
+      .in("asset_class", classes);
 
     if (error || !data) {
       if (error) console.error("[data-service] getConsolidatedHoldings error:", error.message);
