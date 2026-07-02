@@ -111,16 +111,20 @@ function PageTitle() {
     : "10 Jun 2026";
 
   const handleRefresh = useCallback(async (silent = false) => {
-    setIsRefreshing(true);
+    if (!silent) setIsRefreshing(true);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120_000); // 2-min cap
     try {
       const res = await fetch(EDGE_FN_URL, {
         method: "POST",
+        signal: controller.signal,
         headers: {
           "Content-Type": "application/json",
           "apikey": ANON_KEY,
           "Authorization": `Bearer ${ANON_KEY}`,
         },
       });
+      clearTimeout(timeoutId);
       if (!res.ok) {
         const body = await res.text().catch(() => "");
         console.error("[refresh] edge function error:", res.status, body);
@@ -138,10 +142,12 @@ function PageTitle() {
       await queryClient.invalidateQueries();
       if (!silent) toast.success(`Prices updated — ${json.updated ?? 0} holdings refreshed`);
     } catch (err) {
+      clearTimeout(timeoutId);
       console.error("[refresh] failed:", err);
       if (!silent) toast.error("Failed to refresh prices. Please try again.");
+      // silent auto-refresh failures are intentionally swallowed
     } finally {
-      setIsRefreshing(false);
+      if (!silent) setIsRefreshing(false);
     }
   }, [queryClient]);
 
