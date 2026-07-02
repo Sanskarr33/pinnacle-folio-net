@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Users, Building2, PieChart, TrendingUp, Landmark,
   LineChart, Briefcase, Boxes, Shield, Receipt, FileBarChart,
-  ArrowLeftRight, Coins, Timer, ClipboardCheck, Upload, Settings, Globe2,
+  ArrowLeftRight, Coins, Timer, ClipboardCheck, Upload, Settings, Globe2, BarChart2,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 
 const overview = [
   { title: "Dashboard",        url: "/",           icon: LayoutDashboard },
+  { title: "Analytics",        url: "/analytics",  icon: BarChart2       },
   { title: "Family Overview",  url: "/family",     icon: Users           },
   { title: "Entities",         url: "/entities",   icon: Building2       },
   { title: "Asset Allocation", url: "/allocation", icon: PieChart        },
