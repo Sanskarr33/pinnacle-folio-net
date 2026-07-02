@@ -343,6 +343,100 @@ export async function getHoldingDetail(
   );
 }
 
+// ─── sg_transactions ──────────────────────────────────────────────────────────
+
+export interface SGTransaction {
+  id: number;
+  transaction_type: string | null;
+  transaction_date: string | null;
+  financial_year: string | null;
+  asset_class: string | null;
+  security_name: string | null;
+  entity_name: string | null;
+  broker: string | null;
+  folio_number: string | null;
+  quantity: number | null;
+  price: number | null;
+  amount: number | null;
+  purchase_date: string | null;
+  purchase_price: number | null;
+  cost_of_acquisition: number | null;
+  realised_gain: number | null;
+  notes: string | null;
+  source_sheet: string | null;
+  created_at: string | null;
+}
+
+export async function getTransactions(): Promise<SGTransaction[]> {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await supabase
+      .from("sg_transactions")
+      .select("*")
+      .order("transaction_date", { ascending: false });
+    if (error) {
+      console.error("[data-service] sg_transactions fetch error:", error.message);
+      return [];
+    }
+    return (data ?? []) as SGTransaction[];
+  } catch (err) {
+    console.error("[data-service] getTransactions exception:", err);
+    return [];
+  }
+}
+
+// ─── sg_capital_gains ─────────────────────────────────────────────────────────
+
+export interface SGCapitalGain {
+  id: number;
+  financial_year: string | null;
+  asset_class: string | null;
+  entity_name: string | null;
+  sale_amount: number | null;
+  st_gain_loss: number | null;
+  lt_gain_loss: number | null;
+  st_tax: number | null;
+  lt_tax: number | null;
+  created_at: string | null;
+}
+
+export async function getCapitalGains(): Promise<SGCapitalGain[]> {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await supabase
+      .from("sg_capital_gains")
+      .select("*")
+      .order("financial_year", { ascending: false });
+    if (error) {
+      console.error("[data-service] sg_capital_gains fetch error:", error.message);
+      return [];
+    }
+    return (data ?? []) as SGCapitalGain[];
+  } catch (err) {
+    console.error("[data-service] getCapitalGains exception:", err);
+    return [];
+  }
+}
+
+export async function getSellTransactions(): Promise<SGTransaction[]> {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await supabase
+      .from("sg_transactions")
+      .select("*")
+      .eq("transaction_type", "SELL")
+      .order("transaction_date", { ascending: false });
+    if (error) {
+      console.error("[data-service] sg_transactions SELL fetch error:", error.message);
+      return [];
+    }
+    return (data ?? []) as SGTransaction[];
+  } catch (err) {
+    console.error("[data-service] getSellTransactions exception:", err);
+    return [];
+  }
+}
+
 // ─── Not yet derived from holdings — remain on dummy data ─────────────────────
 
 export async function getWealthTimeline(): Promise<WealthPoint[]> {
