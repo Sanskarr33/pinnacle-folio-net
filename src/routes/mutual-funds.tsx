@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { getConsolidatedHoldings } from "@/lib/data-service";
 import { HoldingsKpiBar } from "@/components/holdings/HoldingsKpiBar";
-import { HoldingsTable } from "@/components/holdings/HoldingsTable";
+import { ExpandableHoldingsTable } from "@/components/holdings/ExpandableHoldingsTable";
+
+const ASSET_CLASSES = ["Equity MF", "Debt MF"];
+const ENTITIES = ["All", "SG", "SMC", "SSI", "Veer", "SSG", "SMO", "Suhel"];
 
 export const Route = createFileRoute("/mutual-funds")({
   head: () => ({
@@ -15,28 +19,45 @@ export const Route = createFileRoute("/mutual-funds")({
 });
 
 function MutualFundsPage() {
+  const [entity, setEntity] = useState("All");
+
   const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["consolidatedHoldings", "MF"],
-    queryFn: () => getConsolidatedHoldings(["Equity MF", "Debt MF"]),
+    queryKey: ["consolidatedHoldings", "MF", entity],
+    queryFn: () => getConsolidatedHoldings(ASSET_CLASSES, entity === "All" ? undefined : entity),
     staleTime: 5 * 60 * 1000,
   });
 
   return (
     <div className="px-6 py-6 max-w-[1600px] mx-auto animate-in fade-in duration-500 space-y-6">
-      <div>
-        <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-medium">
-          Portfolio · Mutual Funds
-        </p>
-        <h1 className="text-[28px] font-semibold tracking-tight mt-1">Mutual Funds</h1>
-        <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-          Active SIPs, schemes, fund houses, and category exposure across the family.
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-medium">
+            Portfolio · Mutual Funds
+          </p>
+          <h1 className="text-[28px] font-semibold tracking-tight mt-1">Mutual Funds</h1>
+          <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
+            Active SIPs, schemes, fund houses, and category exposure across the family.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground font-medium">Entity</span>
+          <select
+            value={entity}
+            onChange={(e) => setEntity(e.target.value)}
+            className="text-[12px] border border-border bg-background rounded-md px-3 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+          >
+            {ENTITIES.map((e) => (
+              <option key={e} value={e}>{e === "All" ? "All Entities" : e}</option>
+            ))}
+          </select>
+        </div>
       </div>
       <HoldingsKpiBar rows={rows} isLoading={isLoading} />
-      <HoldingsTable
+      <ExpandableHoldingsTable
         rows={rows}
         isLoading={isLoading}
-        emptyMessage="No mutual fund holdings found in your portfolio."
+        assetClasses={ASSET_CLASSES}
+        emptyMessage="No mutual fund holdings found for this filter."
       />
     </div>
   );
