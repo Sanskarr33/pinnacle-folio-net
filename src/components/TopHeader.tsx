@@ -1,10 +1,13 @@
-import { Bell, Search, ChevronDown, Calendar } from "lucide-react";
+import { Bell, Search, Calendar, LogOut } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
 import { getMarketTickers } from "@/lib/data-service";
 import { marketTickers as fallback } from "@/lib/dummy-data";
 import type { MarketTicker } from "@/lib/types";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
 
 export function TopHeader() {
   const today = new Date().toLocaleDateString("en-IN", {
@@ -18,8 +21,21 @@ export function TopHeader() {
   const { data: tickers = fallback } = useQuery({
     queryKey: ["marketTickers"],
     queryFn: getMarketTickers,
-    staleTime: 60 * 1000, // refresh every minute
+    staleTime: 60 * 1000,
   });
+
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    logout();
+    navigate({ to: "/login", replace: true });
+    toast.success("Signed out successfully");
+  }
+
+  const initials = user?.name
+    ? user.name.slice(0, 2).toUpperCase()
+    : "?";
 
   return (
     <header className="sticky top-0 z-30 h-16 bg-surface/80 backdrop-blur-md border-b border-border flex items-center px-6 gap-4">
@@ -52,15 +68,24 @@ export function TopHeader() {
           <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-destructive" />
         </button>
 
+        {/* User avatar + logout */}
         <div className="flex items-center gap-2.5 pl-2 border-l border-border">
-          <div className="h-9 w-9 rounded-full bg-navy text-navy-foreground flex items-center justify-center text-[11px] font-semibold tracking-wide shrink-0">
-            SG
+          <div className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[11px] font-bold tracking-wide shrink-0">
+            {initials}
           </div>
           <div className="hidden md:flex flex-col leading-tight">
-            <span className="text-[12px] font-semibold">Suresh Gupta</span>
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Principal</span>
+            <span className="text-[12px] font-semibold">{user?.name ?? "—"}</span>
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wider capitalize">
+              {user?.role ?? "viewer"}
+            </span>
           </div>
-          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          <button
+            onClick={handleLogout}
+            title="Sign out"
+            className="ml-1 h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
     </header>

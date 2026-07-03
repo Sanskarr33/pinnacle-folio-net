@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet, Link, createRootRouteWithContext, useRouter,
-  HeadContent, Scripts,
+  HeadContent, Scripts, useRouterState,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
@@ -11,6 +11,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { TopHeader } from "@/components/TopHeader";
 import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
 function NotFoundComponent() {
   return (
@@ -82,18 +83,51 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <SidebarProvider>
-        <div className="flex min-h-screen w-full bg-background">
-          <AppSidebar />
-          <div className="flex-1 flex flex-col min-w-0">
-            <TopHeader />
-            <main className="flex-1 min-w-0">
-              <Outlet />
-            </main>
-          </div>
-        </div>
-      </SidebarProvider>
-      <Toaster position="bottom-right" />
+      <AuthProvider>
+        <AppShell />
+        <Toaster position="bottom-right" />
+      </AuthProvider>
     </QueryClientProvider>
+  );
+}
+
+// Handles auth gating and layout switching between login and app shell.
+function AppShell() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  useEffect(() => {
+    if (!user && pathname !== "/login") {
+      router.navigate({ to: "/login", replace: true });
+    }
+    if (user && pathname === "/login") {
+      router.navigate({ to: "/", replace: true });
+    }
+  }, [user, pathname, router]);
+
+  // Login page — full-screen, no sidebar
+  if (pathname === "/login") {
+    return <Outlet />;
+  }
+
+  // Not yet authenticated — blank while the redirect fires
+  if (!user) {
+    return <div className="min-h-screen bg-background" />;
+  }
+
+  // Authenticated — full layout
+  return (
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full bg-background">
+        <AppSidebar />
+        <div className="flex-1 flex flex-col min-w-0">
+          <TopHeader />
+          <main className="flex-1 min-w-0">
+            <Outlet />
+          </main>
+        </div>
+      </div>
+    </SidebarProvider>
   );
 }

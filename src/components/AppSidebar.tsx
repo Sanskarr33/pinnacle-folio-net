@@ -3,7 +3,9 @@ import {
   LayoutDashboard, Users, Building2, PieChart, TrendingUp, Landmark,
   LineChart, Briefcase, Boxes, Shield, Receipt, FileBarChart,
   ArrowLeftRight, Coins, Timer, ClipboardCheck, Upload, Settings, Globe2, BarChart2,
+  ShieldCheck,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter,
@@ -42,6 +44,7 @@ const ops = [
 export function AppSidebar() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const isActive = (url: string) => (url === "/" ? pathname === "/" : pathname.startsWith(url));
+  const { user } = useAuth();
 
   const renderGroup = (label: string, items: typeof overview) => (
     <SidebarGroup>
@@ -88,7 +91,12 @@ export function AppSidebar() {
         <Separator className="bg-sidebar-border mx-3 my-1 w-auto" />
         {renderGroup("Products", products)}
         <Separator className="bg-sidebar-border mx-3 my-1 w-auto" />
-        {renderGroup("Operations", ops)}
+        {renderGroup("Operations", [
+          ...ops,
+          ...(user?.role === "admin"
+            ? [{ title: "Admin", url: "/admin", icon: ShieldCheck }]
+            : []),
+        ])}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border px-3 py-3">
