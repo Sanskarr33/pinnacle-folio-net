@@ -16,6 +16,7 @@ import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
 import { RiskAlerts } from "@/components/dashboard/RiskAlerts";
 import { ActionRequired } from "@/components/dashboard/ActionRequired";
 import { getLastAsOnDate, invalidateCache } from "@/lib/data-service";
+import { useAuth } from "@/contexts/AuthContext";
 
 const EDGE_FN_URL = "https://bdjwhgwoztdocwdvzrem.supabase.co/functions/v1/update-prices";
 const ANON_KEY    = "sb_publishable_dvvYgNznrT8fMI3ZwCw3cg_y0YNBgU4";
@@ -88,6 +89,8 @@ function DashboardPage() {
 }
 
 function PageTitle() {
+  const { user } = useAuth();
+  const firstName = user?.name?.split(" ")[0] ?? "there";
   const queryClient = useQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshedAt, setRefreshedAt] = useState<string | null>(null);
@@ -167,7 +170,7 @@ function PageTitle() {
     <div className="flex items-end justify-between gap-4 flex-wrap">
       <div>
         <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-medium">Family Office · Principal View</p>
-        <h1 className="text-[28px] font-semibold tracking-tight text-foreground mt-1">Good afternoon, Suresh</h1>
+        <h1 className="text-[28px] font-semibold tracking-tight text-foreground mt-1">{`Good afternoon, ${firstName}`}</h1>
         <p className="text-sm text-muted-foreground mt-1">
           {`Here's the consolidated position across all SG family entities as on ${asOnFormatted}.`}
           {isRefreshing
