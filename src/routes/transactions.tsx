@@ -24,8 +24,12 @@ function fmtAmt(v: number) {
   return `₹${v.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
 }
 
-const ENTITIES = ["All", "SG", "SMC", "SSI", "Veer", "SSG", "SMO", "Suhel"];
-const ASSET_CLASSES = ["All", "Direct Equity", "Equity MF", "Debt MF", "ETF", "PMS", "AIF"];
+const ENTITIES = ["All", "SG", "SMC", "SSI", "Veer", "SMO", "SSG", "Suhel"];
+const ASSET_CLASSES = [
+  "All", "Direct Equity", "Equity MF", "ETF", "Bonds",
+  "PMS/AIF", "Fixed Deposit", "PPF", "NPS",
+  "Unlisted Equity", "Gold/Silver ETF", "International Equity",
+];
 const TX_TYPES = ["All", "BUY", "SELL", "SWITCH_IN", "SWITCH_OUT", "DIVIDEND", "SIP"];
 
 function getFYs(rows: SGTransaction[]): string[] {
@@ -135,6 +139,9 @@ function TransactionsPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
+        <select value={fy} onChange={(e) => setFy(e.target.value)} className={selectCls}>
+          {fys.map((f) => <option key={f} value={f}>{f === "All" ? "All Years" : `FY ${f}`}</option>)}
+        </select>
         <select value={txType} onChange={(e) => setTxType(e.target.value)} className={selectCls}>
           {TX_TYPES.map((t) => <option key={t} value={t}>{t === "All" ? "All Types" : t}</option>)}
         </select>
@@ -144,12 +151,9 @@ function TransactionsPage() {
         <select value={entity} onChange={(e) => setEntity(e.target.value)} className={selectCls}>
           {ENTITIES.map((e) => <option key={e} value={e}>{e === "All" ? "All Entities" : e}</option>)}
         </select>
-        <select value={fy} onChange={(e) => setFy(e.target.value)} className={selectCls}>
-          {fys.map((f) => <option key={f} value={f}>{f === "All" ? "All FYs" : `FY ${f}`}</option>)}
-        </select>
         <input
           type="text"
-          placeholder="Search security, entity, broker…"
+          placeholder="Search security name…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="text-[12px] border border-border bg-background rounded-md px-3 py-1.5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary min-w-[220px]"
