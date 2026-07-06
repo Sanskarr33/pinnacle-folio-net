@@ -86,7 +86,16 @@ function SubRows({
                 return (
                   <tr key={i} className="border-b border-border/30 last:border-0 hover:bg-secondary/40 transition-colors">
                     <td className="px-3 py-2 font-medium text-foreground">{r.entity_name || "—"}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{r.account_name || "—"}</td>
+                    <td className="px-3 py-2">
+                      {r.source_row != null ? (
+                        <div>
+                          <div className="font-medium text-foreground tabular-nums">{r.source_row}</div>
+                          <div className="text-[10.5px] text-muted-foreground mt-0.5">{r.account_name || "—"}</div>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">{r.account_name || "—"}</span>
+                      )}
+                    </td>
                     <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
                       {qty.toLocaleString("en-IN", { maximumFractionDigits: 4 })}
                     </td>
