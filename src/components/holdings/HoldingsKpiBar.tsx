@@ -1,14 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/dashboard/Card";
 import type { PortfolioHolding } from "@/lib/types";
-
-// Divide by CR to convert ₹ rupees → ₹ Crore for display.
-// Set to 1 if your portfolio_detailed_holdings table already stores values in Crore.
-const CR = 10_000_000;
-
-function fmtCr(v: number) {
-  return `₹${(v / CR).toFixed(2)} Cr`;
-}
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 function fmtPct(v: number, signed = false) {
   return `${signed && v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
@@ -21,6 +14,8 @@ export function HoldingsKpiBar({
   rows: PortfolioHolding[];
   isLoading: boolean;
 }) {
+  const { formatAmount } = useCurrency();
+
   const totalValue    = rows.reduce((s, r) => s + (r.current_value   ?? 0), 0);
   const totalInvested = rows.reduce((s, r) => s + (r.invested_value  ?? 0), 0);
   const totalGain     = rows.reduce((s, r) => s + (r.unrealised_gain ?? 0), 0);
@@ -38,21 +33,21 @@ export function HoldingsKpiBar({
   const kpis = [
     {
       label:    "Current Value",
-      value:    fmtCr(totalValue),
+      value:    formatAmount(totalValue),
       sub:      `${rows.length} holding${rows.length !== 1 ? "s" : ""}`,
       positive: null as boolean | null,
       accent:   true,
     },
     {
       label:    "Invested",
-      value:    fmtCr(totalInvested),
+      value:    formatAmount(totalInvested),
       sub:      null as string | null,
       positive: null as boolean | null,
       accent:   false,
     },
     {
       label:    "Unrealised Gain",
-      value:    fmtCr(totalGain),
+      value:    formatAmount(totalGain),
       sub:      fmtPct(overallGainPct, true),
       positive: totalGain >= 0,
       accent:   false,

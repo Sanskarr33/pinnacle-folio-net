@@ -5,6 +5,7 @@ import { getCapitalGains, getSellTransactions } from "@/lib/data-service";
 import type { SGCapitalGain, SGTransaction } from "@/lib/data-service";
 import { cn } from "@/lib/utils";
 import { ChevronRight, TrendingUp, TrendingDown, Receipt, DollarSign } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 export const Route = createFileRoute("/capital-gains")({
   head: () => ({
@@ -16,14 +17,6 @@ export const Route = createFileRoute("/capital-gains")({
   component: CapitalGainsPage,
 });
 
-const CR = 10_000_000;
-function fmtCr(v: number) { return `₹${(v / CR).toFixed(2)} Cr`; }
-function fmtAmt(v: number) {
-  const abs = Math.abs(v);
-  const sign = v >= 0 ? "+" : "−";
-  if (abs >= CR) return `${sign}₹${(abs / CR).toFixed(2)} Cr`;
-  return `${sign}₹${abs.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
-}
 function formatDate(d: string | null) {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
@@ -115,6 +108,7 @@ const RIGHT_COLS = new Set(["Units", "Sale Price", "Sale Value", "Pur Price", "C
 
 function AssetClassSection({ ac, rows }: { ac: string; rows: SGTransaction[] }) {
   const [open, setOpen] = useState(true);
+  const { formatAmount } = useCurrency();
   return (
     <div className="border-t border-border/40 first:border-t-0">
       <button
@@ -168,7 +162,7 @@ function AssetClassSection({ ac, rows }: { ac: string; rows: SGTransaction[] }) 
                         : "—"}
                     </td>
                     <td className="px-4 py-2.5 text-right tabular-nums font-medium">
-                      {r.amount != null ? fmtCr(r.amount) : "—"}
+                      {r.amount != null ? formatAmount(r.amount) : "—"}
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground whitespace-nowrap">{formatDate(r.purchase_date)}</td>
                     <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">
@@ -177,7 +171,7 @@ function AssetClassSection({ ac, rows }: { ac: string; rows: SGTransaction[] }) 
                         : "—"}
                     </td>
                     <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">
-                      {r.cost_of_acquisition != null ? fmtCr(r.cost_of_acquisition) : "—"}
+                      {r.cost_of_acquisition != null ? formatAmount(r.cost_of_acquisition) : "—"}
                     </td>
                     <td
                       className={cn(
@@ -189,7 +183,7 @@ function AssetClassSection({ ac, rows }: { ac: string; rows: SGTransaction[] }) 
                             : "text-destructive",
                       )}
                     >
-                      {gain != null ? fmtAmt(gain) : "—"}
+                      {gain != null ? `${gain >= 0 ? "+" : "−"}${formatAmount(Math.abs(gain))}` : "—"}
                     </td>
                   </tr>
                 );
@@ -211,6 +205,8 @@ function EntityCard({
   cgRows: SGCapitalGain[];
   sellRows: SGTransaction[];
 }) {
+  const { formatAmount } = useCurrency();
+
   const entityCg = useMemo(
     () => cgRows.filter((r) => r.entity_name === entityCode),
     [cgRows, entityCode],
@@ -248,19 +244,19 @@ function EntityCard({
         </div>
         {totalSale > 0 && (
           <span className="text-[12px] font-medium text-muted-foreground tabular-nums">
-            {fmtCr(totalSale)} sold
+            {formatAmount(totalSale)} sold
           </span>
         )}
       </div>
 
       {/* KPI mini row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-border border-b border-border">
-        <MiniKpi label="Sale Proceeds" value={fmtCr(totalSale)} />
-        <MiniKpi label="STCG" value={fmtAmt(stcg)} positive={stcg >= 0} />
-        <MiniKpi label="LTCG" value={fmtAmt(ltcg)} positive={ltcg >= 0} />
+        <MiniKpi label="Sale Proceeds" value={formatAmount(totalSale)} />
+        <MiniKpi label="STCG" value={`${stcg >= 0 ? "+" : "−"}${formatAmount(Math.abs(stcg))}`} positive={stcg >= 0} />
+        <MiniKpi label="LTCG" value={`${ltcg >= 0 ? "+" : "−"}${formatAmount(Math.abs(ltcg))}`} positive={ltcg >= 0} />
         <MiniKpi
           label="Net Tax"
-          value={netTax > 0 ? fmtCr(netTax) : "—"}
+          value={netTax > 0 ? formatAmount(netTax) : "—"}
           positive={netTax > 0 ? false : undefined}
         />
       </div>
@@ -282,6 +278,8 @@ function EntityCard({
 }
 
 function CapitalGainsPage() {
+  const { formatAmount } = useCurrency();
+
   const { data: cgRows = [], isLoading: cgLoading } = useQuery({
     queryKey: ["capitalGains"],
     queryFn: getCapitalGains,
@@ -370,13 +368,13 @@ function CapitalGainsPage() {
 
       {/* Aggregate KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KpiCard icon={DollarSign} label="Total Sale Proceeds" value={fmtCr(totalSale)} />
-        <KpiCard icon={TrendingUp} label="STCG" value={fmtAmt(totalST)} positive={totalST >= 0} />
-        <KpiCard icon={TrendingDown} label="LTCG" value={fmtAmt(totalLT)} positive={totalLT >= 0} />
+        <KpiCard icon={DollarSign} label="Total Sale Proceeds" value={formatAmount(totalSale)} />
+        <KpiCard icon={TrendingUp} label="STCG" value={`${totalST >= 0 ? "+" : "−"}${formatAmount(Math.abs(totalST))}`} positive={totalST >= 0} />
+        <KpiCard icon={TrendingDown} label="LTCG" value={`${totalLT >= 0 ? "+" : "−"}${formatAmount(Math.abs(totalLT))}`} positive={totalLT >= 0} />
         <KpiCard
           icon={Receipt}
           label="Net Tax Liability"
-          value={totalTax > 0 ? fmtCr(totalTax) : "—"}
+          value={totalTax > 0 ? formatAmount(totalTax) : "—"}
           positive={totalTax > 0 ? false : undefined}
         />
       </div>

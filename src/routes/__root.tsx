@@ -12,6 +12,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { TopHeader } from "@/components/TopHeader";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { CurrencyProvider } from "@/contexts/CurrencyContext";
 
 function NotFoundComponent() {
   return (
@@ -84,8 +85,10 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <AppShell />
-        <Toaster position="bottom-right" />
+        <CurrencyProvider>
+          <AppShell />
+          <Toaster position="bottom-right" />
+        </CurrencyProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

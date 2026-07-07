@@ -8,6 +8,8 @@ import {
   PieChart, Pie, Cell, Legend,
 } from "recharts";
 import { cn } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { useSortableTable, SortableHeader } from "@/hooks/useSortableTable";
 
 export const Route = createFileRoute("/analytics")({
   head: () => ({
@@ -55,6 +57,8 @@ const tooltipStyle = {
   boxShadow: "0 4px 12px rgb(15 23 42 / 0.08)",
 };
 
+const CONC_TH = "text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-medium py-2 sticky top-0 bg-surface cursor-pointer select-none group";
+
 function AnalyticsPage() {
   const { data: rawRows, isLoading } = useQuery({
     queryKey: ["allHoldings"],
@@ -63,6 +67,7 @@ function AnalyticsPage() {
   });
 
   const rows: SGHoldingRow[] = rawRows ?? [];
+  const { formatAmount } = useCurrency();
 
   const [activeSlice, setActiveSlice] = useState<number | null>(null);
 
@@ -71,7 +76,6 @@ function AnalyticsPage() {
   // HHI — sum of squared market shares (basis points)
   const hhi = useMemo(() => {
     if (totalAUM === 0) return 0;
-    // Group by security_name first so multi-folio holdings count as one
     const byName = new Map<string, number>();
     for (const r of rows) {
       const key = r.security_name?.trim() || "Unknown";
@@ -86,7 +90,7 @@ function AnalyticsPage() {
   const hhiLabel = hhi < 1500 ? "Well Diversified" : hhi < 2500 ? "Moderate Concentration" : "Concentrated";
   const hhiColor = hhi < 1500 ? "text-emerald-600" : hhi < 2500 ? "text-amber-500" : "text-destructive";
 
-  // Top-10 holdings (consolidated by security_name)
+  // Top-10 holdings (chart data stays pre-divided to Cr)
   const top10 = useMemo(() => {
     const byName = new Map<string, number>();
     for (const r of rows) {
@@ -103,7 +107,7 @@ function AnalyticsPage() {
       }));
   }, [rows, totalAUM]);
 
-  // Asset allocation donut
+  // Asset allocation donut (chart data stays pre-divided to Cr)
   const allocationData = useMemo(() => {
     const byClass = new Map<string, number>();
     for (const r of rows) {
@@ -112,12 +116,12 @@ function AnalyticsPage() {
     }
     return Array.from(byClass.entries())
       .sort((a, b) => b[1] - a[1])
-      .map(([name, value]) => ({ name, value: +(value / CR).toFixed(2), pct: totalAUM > 0 ? +((value / totalAUM) * 100).toFixed(1) : 0 }));
+      .map(([name, value]) => ({ name, value: +(value / CR).toFixed(2), raw: value, pct: totalAUM > 0 ? +((value / totalAUM) * 100).toFixed(1) : 0 }));
   }, [rows, totalAUM]);
 
-  // Concentration risk table — top 20 by % of portfolio
+  // Concentration risk table — raw values for formatAmount
   const concentrationTable = useMemo(() => {
-    const byName = new Map<string, { value: number; asset_class: string }>() ;
+    const byName = new Map<string, { value: number; asset_class: string }>();
     for (const r of rows) {
       const key = r.security_name?.trim() || "Unknown";
       const existing = byName.get(key);
@@ -133,12 +137,14 @@ function AnalyticsPage() {
         rank: idx + 1,
         name,
         asset_class,
-        value: +(value / CR).toFixed(2),
+        value,
         pct: totalAUM > 0 ? +((value / totalAUM) * 100).toFixed(2) : 0,
       }));
   }, [rows, totalAUM]);
 
-  // Entity-wise stacked bar
+  const { sorted: sortedConcentration, sortConfig: concSort, handleSort: concHandleSort } = useSortableTable(concentrationTable, "value", "desc");
+
+  // Entity-wise stacked bar (chart data stays pre-divided to Cr)
   const { entityData, assetClasses } = useMemo(() => {
     const entityMap = new Map<string, Map<string, number>>();
     const classSet = new Set<string>();
@@ -167,7 +173,7 @@ function AnalyticsPage() {
     return { entityData, assetClasses };
   }, [rows]);
 
-  // Gain/loss grouped bar chart by asset class
+  // Gain/loss grouped bar chart by asset class (chart data stays pre-divided to Cr)
   const gainByClass = useMemo(() => {
     const byClass = new Map<string, { invested: number; current: number; gain: number }>();
     for (const r of rows) {
@@ -224,7 +230,7 @@ function AnalyticsPage() {
         />
         <KpiCard
           label="Total AUM"
-          value={`₹${(totalAUM / CR).toFixed(2)} Cr`}
+          value={formatAmount(totalAUM)}
           sub={`${rows.length} raw positions`}
         />
         <KpiCard
@@ -270,7 +276,7 @@ function AnalyticsPage() {
               <Tooltip
                 contentStyle={tooltipStyle}
                 formatter={(v: number, _name: string, props: { payload?: { pct?: number } }) =>
-                  [`₹${v.toFixed(2)} Cr (${props.payload?.pct ?? 0}%)`, "Value"]
+                  [formatAmount((v as number) * CR) + ` (${props.payload?.pct ?? 0}%)`, "Value"]
                 }
               />
               <Bar dataKey="value" fill="var(--chart-1)" radius={[0, 4, 4, 0]} />
@@ -281,7 +287,7 @@ function AnalyticsPage() {
 
       {/* Asset allocation donut + legend */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SectionCard title="Asset Allocation" subtitle="Click a slice to highlight · ₹ Crore">
+        <SectionCard title="Asset Allocation" subtitle="Click a slice to highlight">
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <div className="h-[220px] w-full sm:w-[220px] shrink-0">
               <ResponsiveContainer width="100%" height="100%">
@@ -309,7 +315,7 @@ function AnalyticsPage() {
                       />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`₹${v.toFixed(2)} Cr`, "Value"]} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [formatAmount((v as number) * CR), "Value"]} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -329,7 +335,7 @@ function AnalyticsPage() {
                     <span className="font-medium">{a.name}</span>
                   </div>
                   <div className="flex items-center gap-3 tabular-nums">
-                    <span className="text-muted-foreground text-[11px]">₹{a.value.toFixed(2)} Cr</span>
+                    <span className="text-muted-foreground text-[11px]">{formatAmount(a.raw)}</span>
                     <span className="font-semibold w-10 text-right">{a.pct}%</span>
                   </div>
                 </li>
@@ -339,25 +345,25 @@ function AnalyticsPage() {
         </SectionCard>
 
         {/* Concentration risk table */}
-        <SectionCard title="Concentration Risk" subtitle="Top 20 holdings by portfolio weight">
+        <SectionCard title="Concentration Risk" subtitle="Top 20 holdings by portfolio weight · click column headers to sort">
           <div className="overflow-y-auto max-h-[320px]">
             <table className="w-full text-[12px]">
-              <thead className="sticky top-0 bg-surface">
+              <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-medium py-2 pr-3">#</th>
-                  <th className="text-left text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-medium py-2">Security</th>
-                  <th className="text-left text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-medium py-2">Class</th>
-                  <th className="text-right text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-medium py-2">Value</th>
-                  <th className="text-right text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-medium py-2">Weight</th>
+                  <th className={`${CONC_TH} text-left pr-3`}>#</th>
+                  <SortableHeader label="Security"  sortKey="name"        sortConfig={concSort} onSort={concHandleSort} className={`${CONC_TH} text-left`} />
+                  <SortableHeader label="Class"     sortKey="asset_class" sortConfig={concSort} onSort={concHandleSort} className={`${CONC_TH} text-left`} />
+                  <SortableHeader label="Value"     sortKey="value"       sortConfig={concSort} onSort={concHandleSort} className={`${CONC_TH} text-right`} />
+                  <SortableHeader label="Weight"    sortKey="pct"         sortConfig={concSort} onSort={concHandleSort} className={`${CONC_TH} text-right`} />
                 </tr>
               </thead>
               <tbody>
-                {concentrationTable.map((r) => (
+                {sortedConcentration.map((r) => (
                   <tr key={r.rank} className="border-b border-border/30 hover:bg-secondary/30 transition-colors">
                     <td className="py-2 pr-3 text-muted-foreground tabular-nums">{r.rank}</td>
                     <td className="py-2 max-w-[140px] truncate font-medium">{r.name}</td>
                     <td className="py-2 text-muted-foreground text-[11px]">{r.asset_class}</td>
-                    <td className="py-2 text-right tabular-nums">₹{r.value.toFixed(2)} Cr</td>
+                    <td className="py-2 text-right tabular-nums">{formatAmount(r.value)}</td>
                     <td className="py-2 text-right tabular-nums font-semibold">
                       <span className={cn(r.pct > 10 ? "text-amber-500" : r.pct > 20 ? "text-destructive" : "text-foreground")}>
                         {r.pct.toFixed(2)}%
@@ -390,7 +396,7 @@ function AnalyticsPage() {
                 tickFormatter={(v: number) => `₹${v} Cr`}
                 width={56}
               />
-              <Tooltip contentStyle={tooltipStyle} formatter={(v: number, name: string) => [`₹${(v as number).toFixed(2)} Cr`, name]} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(v: number, name: string) => [formatAmount((v as number) * CR), name]} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               {assetClasses.map((cls, i) => (
                 <Bar
@@ -425,7 +431,7 @@ function AnalyticsPage() {
                 tickFormatter={(v: number) => `₹${v}`}
                 width={56}
               />
-              <Tooltip contentStyle={tooltipStyle} formatter={(v: number, name: string) => [`₹${(v as number).toFixed(2)} Cr`, name]} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(v: number, name: string) => [formatAmount((v as number) * CR), name]} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar dataKey="Invested" fill="var(--chart-2)" radius={[4, 4, 0, 0]} />
               <Bar dataKey="Current" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />

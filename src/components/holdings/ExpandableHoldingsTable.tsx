@@ -6,13 +6,10 @@ import { getHoldingDetail } from "@/lib/data-service";
 import type { PortfolioHolding, SGHoldingRow } from "@/lib/types";
 import type { ColDef } from "./HoldingsTable";
 import { COLS_DEFAULT, getCellText, cellColor } from "./HoldingsTable";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { useSortableTable, SortableHeader } from "@/hooks/useSortableTable";
 
-const CR = 10_000_000;
 const SKELETON_WIDTHS = [60, 80, 45, 70, 55, 65, 50, 75];
-
-function fmtCr(v: number) {
-  return `₹${(v / CR).toFixed(2)} Cr`;
-}
 
 function fmtPctSigned(v: number) {
   return `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
@@ -27,6 +24,7 @@ function SubRows({
   assetClasses: string | string[];
   colSpan: number;
 }) {
+  const { formatAmount } = useCurrency();
   const key = Array.isArray(assetClasses) ? assetClasses.join(",") : assetClasses;
   const { data: rows = [], isLoading } = useQuery<SGHoldingRow[]>({
     queryKey: ["holdingDetail", securityName, key],
@@ -102,10 +100,10 @@ function SubRows({
                     <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
                       {avgCost > 0 ? avgCost.toLocaleString("en-IN", { maximumFractionDigits: 2 }) : "—"}
                     </td>
-                    <td className="px-3 py-2 text-right tabular-nums font-medium">{fmtCr(cur)}</td>
-                    <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{fmtCr(inv)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums font-medium">{formatAmount(cur)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{formatAmount(inv)}</td>
                     <td className={cn("px-3 py-2 text-right tabular-nums", gain >= 0 ? "text-emerald-600" : "text-destructive")}>
-                      {`${gain >= 0 ? "+" : "−"}${fmtCr(Math.abs(gain))}`}
+                      {`${gain >= 0 ? "+" : "−"}${formatAmount(Math.abs(gain))}`}
                     </td>
                     <td className={cn("px-3 py-2 text-right tabular-nums", gainPct == null ? "text-muted-foreground" : gainPct >= 0 ? "text-emerald-600" : "text-destructive")}>
                       {gainPct != null ? fmtPctSigned(gainPct) : "N/A"}
@@ -121,6 +119,9 @@ function SubRows({
   );
 }
 
+const TH_BASE =
+  "px-4 py-2.5 text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-medium whitespace-nowrap";
+
 export function ExpandableHoldingsTable({
   rows,
   columns = COLS_DEFAULT,
@@ -134,6 +135,8 @@ export function ExpandableHoldingsTable({
   emptyMessage?: string;
   assetClasses: string | string[];
 }) {
+  const { formatAmount } = useCurrency();
+  const { sorted, sortConfig, handleSort } = useSortableTable(rows, "current_value", "desc");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const toggle = (name: string) => {
@@ -155,23 +158,23 @@ export function ExpandableHoldingsTable({
           <thead>
             <tr className="border-b border-border bg-secondary/40">
               <th className="px-3 py-2.5 w-8" />
-              <th className="px-4 py-2.5 text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-medium w-8">
-                #
-              </th>
+              <th className={cn(TH_BASE, "text-left w-8")}>#</th>
               {columns.map((col) => (
-                <th
+                <SortableHeader
                   key={col.key}
+                  label={col.label}
+                  sortKey={col.key}
+                  sortConfig={sortConfig}
+                  onSort={handleSort}
                   className={cn(
-                    "px-4 py-2.5 text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-medium whitespace-nowrap",
+                    TH_BASE,
                     col.align === "right"
                       ? "text-right"
                       : col.align === "center"
                         ? "text-center"
                         : "text-left",
                   )}
-                >
-                  {col.label}
-                </th>
+                />
               ))}
             </tr>
           </thead>
@@ -211,7 +214,7 @@ export function ExpandableHoldingsTable({
             )}
 
             {!isLoading &&
-              rows.flatMap((row, idx) => {
+              sorted.flatMap((row, idx) => {
                 const name = row.security_name || row.scheme_name || `row-${idx}`;
                 const isOpen = expanded.has(name);
                 const mainRow = (
@@ -237,7 +240,7 @@ export function ExpandableHoldingsTable({
                       {idx + 1}
                     </td>
                     {columns.map((col) => {
-                      const val = getCellText(row, col);
+                      const val = getCellText(row, col, formatAmount);
                       return (
                         <td
                           key={col.key}

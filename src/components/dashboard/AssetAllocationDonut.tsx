@@ -1,7 +1,7 @@
 import { Card } from "./Card";
 import { useQuery } from "@tanstack/react-query";
 import { getAssetAllocation, getFamilyKpis } from "@/lib/data-service";
-import { inr } from "@/lib/dummy-data";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-5)", "var(--chart-3)", "var(--chart-4)"];
@@ -21,6 +21,7 @@ export function AssetAllocationDonut() {
     retry: 1,
   });
 
+  const { formatAmount } = useCurrency();
   const isLoading = allocLoading || kpisLoading;
   const isError   = allocError   || kpisError;
 
@@ -69,10 +70,10 @@ export function AssetAllocationDonut() {
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Total AUM</span>
           <span className="text-[22px] font-semibold tabular tracking-tight mt-0.5">
-            {inr(kpis.totalAUM, { compact: true })}
+            {formatAmount(kpis.totalAUM)}
           </span>
           <span className="text-[10.5px] tabular text-muted-foreground">
-            {inr(kpis.invested, { compact: true })} invested
+            {formatAmount(kpis.invested)} invested
           </span>
         </div>
       </div>
@@ -84,7 +85,7 @@ export function AssetAllocationDonut() {
               <span className="font-medium text-foreground">{a.name}</span>
             </div>
             <div className="flex items-center gap-3 tabular">
-              <span className="text-muted-foreground text-[11px]">{inr(a.amount, { compact: true })}</span>
+              <span className="text-muted-foreground text-[11px]">{formatAmount(a.amount)}</span>
               <span className="font-semibold w-12 text-right">{a.value.toFixed(2)}%</span>
             </div>
           </li>

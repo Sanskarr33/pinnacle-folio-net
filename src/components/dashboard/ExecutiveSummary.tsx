@@ -1,7 +1,8 @@
 import { TrendingUp, TrendingDown, Wallet, Activity, Target, AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getFamilyKpis } from "@/lib/data-service";
-import { inr, pct } from "@/lib/dummy-data";
+import { pct } from "@/lib/dummy-data";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 export function ExecutiveSummary() {
   const { data: k, isError, error, isLoading } = useQuery({
@@ -25,6 +26,8 @@ export function ExecutiveSummary() {
     );
   }
 
+  const { formatAmount } = useCurrency();
+
   if (isLoading || !k) {
     return <div className="h-[220px] rounded-xl border border-border bg-muted/20 animate-pulse" />;
   }
@@ -39,19 +42,19 @@ export function ExecutiveSummary() {
         <div className="col-span-12 lg:col-span-4 p-6 border-b lg:border-b-0 lg:border-r border-white/10">
           <p className="text-[10px] uppercase tracking-[0.22em] text-white/55 font-medium">Total Family AUM</p>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-[44px] leading-none font-semibold tracking-tight tabular">{inr(k.totalAUM, { compact: true })}</span>
+            <span className="text-[44px] leading-none font-semibold tracking-tight tabular">{formatAmount(k.totalAUM)}</span>
           </div>
           <div className="mt-3 flex items-center gap-3 text-[12px]">
             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium ${k.dayChange >= 0 ? "bg-success/20 text-emerald-300" : "bg-destructive/20 text-rose-300"}`}>
               {k.dayChange >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
               {pct(k.dayChangePct)} today
             </span>
-            <span className="text-white/55 tabular">{k.dayChange >= 0 ? "+" : ""}{inr(k.dayChange, { compact: true })}</span>
+            <span className="text-white/55 tabular">{k.dayChange >= 0 ? "+" : ""}{formatAmount(k.dayChange)}</span>
           </div>
           <div className="mt-5 pt-5 border-t border-white/10 grid grid-cols-2 gap-4 text-[11px]">
             <div>
               <p className="text-white/50 uppercase tracking-wider">Invested</p>
-              <p className="mt-1 text-[14px] font-medium tabular">{inr(k.invested, { compact: true })}</p>
+              <p className="mt-1 text-[14px] font-medium tabular">{formatAmount(k.invested)}</p>
             </div>
             <div>
               <p className="text-white/50 uppercase tracking-wider">Entities</p>
@@ -61,10 +64,10 @@ export function ExecutiveSummary() {
         </div>
 
         <div className="col-span-12 lg:col-span-8 grid grid-cols-2 md:grid-cols-4">
-          <Stat icon={TrendingUp}  label="Unrealised P/L"  value={inr(k.unrealisedGain, { compact: true })} sub={pct(k.unrealisedGainPct)} positive={k.unrealisedGain >= 0} />
-          <Stat icon={Wallet}      label="Realised P/L (FY)" value={inr(k.realisedGain, { compact: true })} sub={pct(k.realisedGainPct)} positive={k.realisedGain >= 0} />
+          <Stat icon={TrendingUp}  label="Unrealised P/L"  value={formatAmount(k.unrealisedGain)} sub={pct(k.unrealisedGainPct)} positive={k.unrealisedGain >= 0} />
+          <Stat icon={Wallet}      label="Realised P/L (FY)" value={formatAmount(k.realisedGain)} sub={pct(k.realisedGainPct)} positive={k.realisedGain >= 0} />
           <Stat icon={Target}      label="Portfolio XIRR"  value={`${k.xirr}%`} sub="vs benchmark 12.4%" positive={k.xirr >= 12.4} />
-          <Stat icon={Activity}    label="Day Movement"    value={pct(k.dayChangePct)} sub={inr(k.dayChange, { compact: true })} positive={k.dayChange >= 0} last />
+          <Stat icon={Activity}    label="Day Movement"    value={pct(k.dayChangePct)} sub={formatAmount(k.dayChange)} positive={k.dayChange >= 0} last />
         </div>
       </div>
     </div>

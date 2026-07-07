@@ -6,8 +6,18 @@ import { getMarketTickers } from "@/lib/data-service";
 import { marketTickers as fallback } from "@/lib/dummy-data";
 import type { MarketTicker } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import type { CurrencyFormat } from "@/contexts/CurrencyContext";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+const FORMAT_BTNS: { key: CurrencyFormat; label: string }[] = [
+  { key: "cr",      label: "Cr" },
+  { key: "lakh",    label: "L"  },
+  { key: "million", label: "M"  },
+  { key: "raw",     label: "₹"  },
+];
 
 export function TopHeader() {
   const today = new Date().toLocaleDateString("en-IN", {
@@ -25,6 +35,7 @@ export function TopHeader() {
   });
 
   const { user, logout } = useAuth();
+  const { format, setFormat } = useCurrency();
   const navigate = useNavigate();
 
   function handleLogout() {
@@ -59,6 +70,24 @@ export function TopHeader() {
       </div>
 
       <div className="ml-auto flex items-center gap-4">
+        {/* Currency format toggle */}
+        <div className="hidden md:flex items-center gap-0.5 border border-border rounded-lg p-0.5 bg-secondary/40">
+          {FORMAT_BTNS.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setFormat(key)}
+              className={cn(
+                "px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors",
+                format === key
+                  ? "bg-surface text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <div className="hidden lg:flex items-center gap-4 text-[11px] tabular pr-4 border-r border-border">
           {tickers.map((t) => <Ticker key={t.label} {...t} />)}
         </div>

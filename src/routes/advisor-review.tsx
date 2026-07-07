@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { getAllHoldings } from "@/lib/data-service";
-import { inr, pct } from "@/lib/dummy-data";
+import { pct } from "@/lib/dummy-data";
 import { Card } from "@/components/dashboard/Card";
 import { Wallet, Layers, TrendingUp, TrendingDown, Users } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { useSortableTable, SortableHeader } from "@/hooks/useSortableTable";
 
 export const Route = createFileRoute("/advisor-review")({
   head: () => ({
@@ -15,21 +17,25 @@ export const Route = createFileRoute("/advisor-review")({
   component: AdvisorReviewPage,
 });
 
-function Kpi({ icon: Icon, label, value, positive }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string; positive?: boolean }) {
+type IconComponent = (props: { className?: string }) => JSX.Element | null;
+function Kpi({ icon: Icon, label, value, positive }: { icon: IconComponent; label: string; value: string; positive?: boolean }) {
   return (
     <div className="rounded-xl border border-border bg-surface p-4 shadow-elegant">
       <div className="flex items-center gap-2 text-muted-foreground">
         <Icon className="h-3.5 w-3.5" />
         <span className="text-[10px] uppercase tracking-[0.18em] font-medium">{label}</span>
       </div>
-      <p className={`mt-2.5 text-[20px] font-semibold tabular tracking-tight ${
+      <p className={`mt-2.5 text-[20px] font-semibold tabular-nums tracking-tight ${
         positive === undefined ? "text-foreground" : positive ? "text-success" : "text-destructive"
       }`}>{value}</p>
     </div>
   );
 }
 
+const TH = "text-[10px] uppercase tracking-wider text-muted-foreground font-semibold py-2.5 cursor-pointer select-none group whitespace-nowrap";
+
 function AdvisorReviewPage() {
+  const { formatAmount } = useCurrency();
   const { data, isLoading } = useQuery({
     queryKey: ["allHoldings"],
     queryFn: getAllHoldings,
@@ -49,9 +55,11 @@ function AdvisorReviewPage() {
     b.gain += r.unrealised_gain ?? 0;
     map.set(a, b);
   }
-  const advisors = Array.from(map.values()).sort((a, b) => b.current - a.current);
-  const totalInvested = advisors.reduce((s, r) => s + r.invested, 0);
-  const totalGain = advisors.reduce((s, r) => s + r.gain, 0);
+  const rawAdvisors = Array.from(map.values());
+  const { sorted: advisors, sortConfig, handleSort } = useSortableTable(rawAdvisors, "current", "desc");
+
+  const totalInvested = rawAdvisors.reduce((s, r) => s + r.invested, 0);
+  const totalGain = rawAdvisors.reduce((s, r) => s + r.gain, 0);
 
   return (
     <div className="px-6 py-6 max-w-[1600px] mx-auto animate-in fade-in duration-500 space-y-6">
@@ -62,30 +70,30 @@ function AdvisorReviewPage() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Kpi icon={Wallet} label="Total AUM" value={inr(totalAll, { compact: true })} />
-        <Kpi icon={Layers} label="Total invested" value={inr(totalInvested, { compact: true })} />
-        <Kpi icon={totalGain >= 0 ? TrendingUp : TrendingDown} label="Unrealised P/L" value={inr(totalGain, { compact: true })} positive={totalGain >= 0} />
-        <Kpi icon={Users} label="Advisors" value={advisors.length.toString()} />
+        <Kpi icon={Wallet} label="Total AUM" value={formatAmount(totalAll)} />
+        <Kpi icon={Layers} label="Total invested" value={formatAmount(totalInvested)} />
+        <Kpi icon={totalGain >= 0 ? TrendingUp : TrendingDown} label="Unrealised P/L" value={formatAmount(totalGain)} positive={totalGain >= 0} />
+        <Kpi icon={Users} label="Advisors" value={rawAdvisors.length.toString()} />
       </div>
 
-      <Card title="Advisor allocation" subtitle={`${advisors.length} mandate manager${advisors.length === 1 ? "" : "s"}`}>
+      <Card title="Advisor allocation" subtitle={`${rawAdvisors.length} mandate manager${rawAdvisors.length === 1 ? "" : "s"} · click column headers to sort`}>
         {isLoading ? (
           <div className="py-12 text-center text-sm text-muted-foreground">Loading advisors…</div>
-        ) : advisors.length === 0 ? (
+        ) : rawAdvisors.length === 0 ? (
           <div className="py-12 text-center text-sm text-muted-foreground">No advisor data.</div>
         ) : (
           <div className="overflow-x-auto -mx-5">
             <table className="w-full text-[12px]">
               <thead>
-                <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-y border-border bg-secondary/40">
-                  <th className="text-left font-semibold px-5 py-2.5">#</th>
-                  <th className="text-left font-semibold py-2.5">Advisor / Manager</th>
-                  <th className="text-right font-semibold py-2.5">Holdings</th>
-                  <th className="text-right font-semibold py-2.5">Invested</th>
-                  <th className="text-right font-semibold py-2.5">Current AUM</th>
-                  <th className="text-right font-semibold py-2.5">Unrealised P/L</th>
-                  <th className="text-right font-semibold py-2.5">Gain%</th>
-                  <th className="text-right font-semibold px-5 py-2.5">Allocation%</th>
+                <tr className="border-y border-border bg-secondary/40">
+                  <th className={`${TH} text-left px-5`}>#</th>
+                  <SortableHeader label="Advisor / Manager" sortKey="advisor"  sortConfig={sortConfig} onSort={handleSort} className={`${TH} text-left`} />
+                  <SortableHeader label="Holdings"           sortKey="count"    sortConfig={sortConfig} onSort={handleSort} className={`${TH} text-right`} />
+                  <SortableHeader label="Invested"           sortKey="invested" sortConfig={sortConfig} onSort={handleSort} className={`${TH} text-right`} />
+                  <SortableHeader label="Current AUM"        sortKey="current"  sortConfig={sortConfig} onSort={handleSort} className={`${TH} text-right`} />
+                  <SortableHeader label="Unrealised P/L"     sortKey="gain"     sortConfig={sortConfig} onSort={handleSort} className={`${TH} text-right`} />
+                  <th className={`${TH} text-right`}>Gain%</th>
+                  <th className={`${TH} text-right px-5`}>Allocation%</th>
                 </tr>
               </thead>
               <tbody>
@@ -94,14 +102,14 @@ function AdvisorReviewPage() {
                   const alloc = totalAll > 0 ? (a.current / totalAll) * 100 : 0;
                   return (
                     <tr key={a.advisor} className="border-b border-border/60 hover:bg-secondary/40 transition-colors">
-                      <td className="px-5 py-3 text-muted-foreground tabular">{String(i + 1).padStart(2, "0")}</td>
+                      <td className="px-5 py-3 text-muted-foreground tabular-nums">{String(i + 1).padStart(2, "0")}</td>
                       <td className="py-3 font-medium text-foreground">{a.advisor}</td>
-                      <td className="py-3 text-right tabular text-muted-foreground">{a.count}</td>
-                      <td className="py-3 text-right tabular">{inr(a.invested, { compact: true })}</td>
-                      <td className="py-3 text-right font-semibold tabular">{inr(a.current, { compact: true })}</td>
-                      <td className={`py-3 text-right font-semibold tabular ${a.gain >= 0 ? "text-success" : "text-destructive"}`}>{inr(a.gain, { compact: true })}</td>
-                      <td className={`py-3 text-right font-semibold tabular ${gp >= 0 ? "text-success" : "text-destructive"}`}>{pct(gp)}</td>
-                      <td className="px-5 py-3 text-right tabular text-muted-foreground">{alloc.toFixed(2)}%</td>
+                      <td className="py-3 text-right tabular-nums text-muted-foreground">{a.count}</td>
+                      <td className="py-3 text-right tabular-nums">{formatAmount(a.invested)}</td>
+                      <td className="py-3 text-right font-semibold tabular-nums">{formatAmount(a.current)}</td>
+                      <td className={`py-3 text-right font-semibold tabular-nums ${a.gain >= 0 ? "text-success" : "text-destructive"}`}>{formatAmount(a.gain)}</td>
+                      <td className={`py-3 text-right font-semibold tabular-nums ${gp >= 0 ? "text-success" : "text-destructive"}`}>{pct(gp)}</td>
+                      <td className="px-5 py-3 text-right tabular-nums text-muted-foreground">{alloc.toFixed(2)}%</td>
                     </tr>
                   );
                 })}

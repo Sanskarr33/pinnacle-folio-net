@@ -5,6 +5,8 @@ import { getTransactions } from "@/lib/data-service";
 import type { SGTransaction } from "@/lib/data-service";
 import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, ArrowLeftRight, Hash } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { useSortableTable, SortableHeader } from "@/hooks/useSortableTable";
 
 export const Route = createFileRoute("/transactions")({
   head: () => ({
@@ -15,14 +17,6 @@ export const Route = createFileRoute("/transactions")({
   }),
   component: TransactionsPage,
 });
-
-const CR = 10_000_000;
-function fmtCr(v: number) { return `₹${(v / CR).toFixed(2)} Cr`; }
-function fmtAmt(v: number) {
-  const abs = Math.abs(v);
-  if (abs >= CR) return `₹${(v / CR).toFixed(2)} Cr`;
-  return `₹${v.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
-}
 
 const ENTITIES = ["All", "SG", "SMC", "SSI", "Veer", "SMO", "SSG", "Suhel"];
 const ASSET_CLASSES = [
@@ -37,40 +31,28 @@ function getFYs(rows: SGTransaction[]): string[] {
   return ["All", ...Array.from(fys).sort().reverse()];
 }
 
-function KpiCard({
-  icon: Icon,
-  label,
-  value,
-  positive,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  positive?: boolean;
-}) {
+type IconComponent = (props: { className?: string }) => JSX.Element | null;
+function KpiCard({ icon: Icon, label, value, positive }: { icon: IconComponent; label: string; value: string; positive?: boolean }) {
   return (
     <div className="rounded-xl border border-border bg-surface p-4 shadow-elegant">
       <div className="flex items-center gap-2 text-muted-foreground">
         <Icon className="h-3.5 w-3.5" />
         <span className="text-[10px] uppercase tracking-[0.18em] font-medium">{label}</span>
       </div>
-      <p
-        className={cn(
-          "mt-2.5 text-[20px] font-semibold tabular-nums tracking-tight",
-          positive === undefined
-            ? "text-foreground"
-            : positive
-              ? "text-emerald-600"
-              : "text-destructive",
-        )}
-      >
+      <p className={cn(
+        "mt-2.5 text-[20px] font-semibold tabular-nums tracking-tight",
+        positive === undefined ? "text-foreground" : positive ? "text-emerald-600" : "text-destructive",
+      )}>
         {value}
       </p>
     </div>
   );
 }
 
+const TH = "px-4 py-2.5 text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-medium whitespace-nowrap cursor-pointer select-none group";
+
 function TransactionsPage() {
+  const { formatAmount } = useCurrency();
   const { data: allRows = [], isLoading } = useQuery({
     queryKey: ["transactions"],
     queryFn: getTransactions,
@@ -103,6 +85,8 @@ function TransactionsPage() {
     return rows;
   }, [allRows, txType, assetClass, entity, fy, search]);
 
+  const { sorted: sortedRows, sortConfig, handleSort } = useSortableTable(filtered, "transaction_date", "desc");
+
   const buyTotal = filtered
     .filter((r) => r.transaction_type === "BUY" || r.transaction_type === "SIP" || r.transaction_type === "SWITCH_IN")
     .reduce((s, r) => s + (r.amount ?? 0), 0);
@@ -126,12 +110,12 @@ function TransactionsPage() {
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KpiCard icon={TrendingUp} label="Total buy / in" value={fmtCr(buyTotal)} />
-        <KpiCard icon={TrendingDown} label="Total sell / out" value={fmtCr(sellTotal)} />
+        <KpiCard icon={TrendingUp} label="Total buy / in" value={formatAmount(buyTotal)} />
+        <KpiCard icon={TrendingDown} label="Total sell / out" value={formatAmount(sellTotal)} />
         <KpiCard
           icon={ArrowLeftRight}
           label="Net flow"
-          value={fmtCr(Math.abs(netFlow))}
+          value={formatAmount(Math.abs(netFlow))}
           positive={netFlow >= 0}
         />
         <KpiCard icon={Hash} label="Transactions" value={filtered.length.toLocaleString("en-IN")} />
@@ -174,17 +158,17 @@ function TransactionsPage() {
           <table className="w-full text-[12.5px]">
             <thead>
               <tr className="border-b border-border bg-secondary/40">
-                {["#", "Date", "Type", "Security", "Asset Class", "Entity", "Broker / Folio", "Qty", "Price", "Amount", "Realised Gain"].map((h) => (
-                  <th
-                    key={h}
-                    className={cn(
-                      "px-4 py-2.5 text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-medium whitespace-nowrap",
-                      ["Qty", "Price", "Amount", "Realised Gain"].includes(h) ? "text-right" : "text-left",
-                    )}
-                  >
-                    {h}
-                  </th>
-                ))}
+                <th className="px-4 py-2.5 text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-medium text-left whitespace-nowrap">#</th>
+                <SortableHeader label="Date"          sortKey="transaction_date" sortConfig={sortConfig} onSort={handleSort} className={`${TH} text-left`} />
+                <th className="px-4 py-2.5 text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-medium text-left whitespace-nowrap">Type</th>
+                <SortableHeader label="Security"      sortKey="security_name"    sortConfig={sortConfig} onSort={handleSort} className={`${TH} text-left`} />
+                <th className="px-4 py-2.5 text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-medium text-left whitespace-nowrap">Asset Class</th>
+                <SortableHeader label="Entity"        sortKey="entity_name"      sortConfig={sortConfig} onSort={handleSort} className={`${TH} text-left`} />
+                <th className="px-4 py-2.5 text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-medium text-left whitespace-nowrap">Broker / Folio</th>
+                <th className="px-4 py-2.5 text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-medium text-right whitespace-nowrap">Qty</th>
+                <th className="px-4 py-2.5 text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-medium text-right whitespace-nowrap">Price</th>
+                <SortableHeader label="Amount"        sortKey="amount"           sortConfig={sortConfig} onSort={handleSort} className={`${TH} text-right`} />
+                <SortableHeader label="Realised Gain" sortKey="realised_gain"    sortConfig={sortConfig} onSort={handleSort} className={`${TH} text-right`} />
               </tr>
             </thead>
             <tbody>
@@ -199,7 +183,7 @@ function TransactionsPage() {
                   </tr>
                 ))}
 
-              {!isLoading && filtered.length === 0 && (
+              {!isLoading && sortedRows.length === 0 && (
                 <tr>
                   <td colSpan={11} className="px-4 py-16 text-center text-sm text-muted-foreground">
                     No transactions match the current filters.
@@ -208,7 +192,7 @@ function TransactionsPage() {
               )}
 
               {!isLoading &&
-                filtered.map((r, i) => {
+                sortedRows.map((r, i) => {
                   const isSell = r.transaction_type === "SELL" || r.transaction_type === "SWITCH_OUT";
                   const isBuy = r.transaction_type === "BUY" || r.transaction_type === "SIP" || r.transaction_type === "SWITCH_IN";
                   const gain = r.realised_gain;
@@ -247,7 +231,7 @@ function TransactionsPage() {
                         {r.price != null ? `₹${r.price.toLocaleString("en-IN", { maximumFractionDigits: 2 })}` : "—"}
                       </td>
                       <td className="px-4 py-3 text-right tabular-nums font-medium">
-                        {r.amount != null ? fmtAmt(r.amount) : "—"}
+                        {r.amount != null ? formatAmount(r.amount) : "—"}
                       </td>
                       <td
                         className={cn(
@@ -255,7 +239,7 @@ function TransactionsPage() {
                           gain == null ? "text-muted-foreground" : gain >= 0 ? "text-emerald-600" : "text-destructive",
                         )}
                       >
-                        {gain != null ? `${gain >= 0 ? "+" : ""}${fmtAmt(gain)}` : "—"}
+                        {gain != null ? `${gain >= 0 ? "+" : "−"}${formatAmount(Math.abs(gain))}` : "—"}
                       </td>
                     </tr>
                   );
@@ -263,7 +247,7 @@ function TransactionsPage() {
             </tbody>
           </table>
         </div>
-        {!isLoading && filtered.length > 0 && (
+        {!isLoading && sortedRows.length > 0 && (
           <div className="px-4 py-2.5 border-t border-border/40 bg-secondary/20">
             <span className="text-[11px] text-muted-foreground">
               {filtered.length} transaction{filtered.length !== 1 ? "s" : ""}

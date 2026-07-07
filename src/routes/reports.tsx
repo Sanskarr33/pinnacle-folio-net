@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { getAllHoldings, getFamilyKpis } from "@/lib/data-service";
-import { inr, pct } from "@/lib/dummy-data";
+import { pct } from "@/lib/dummy-data";
 import { Card } from "@/components/dashboard/Card";
 import { FileText, Download, PieChart, Receipt, Briefcase } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { useSortableTable, SortableHeader } from "@/hooks/useSortableTable";
 
 export const Route = createFileRoute("/reports")({
   head: () => ({
@@ -22,7 +24,10 @@ const REPORTS = [
   { icon: Receipt, title: "Capital Gains Statement", desc: "Realised & unrealised gains, holding period, indexation working." },
 ];
 
+const TH = "text-[10px] uppercase tracking-wider text-muted-foreground font-semibold py-2.5 cursor-pointer select-none group whitespace-nowrap";
+
 function ReportsPage() {
+  const { formatAmount } = useCurrency();
   const { data: holdings } = useQuery({ queryKey: ["allHoldings"], queryFn: getAllHoldings, staleTime: 5 * 60 * 1000 });
   const { data: kpis } = useQuery({ queryKey: ["familyKpis"], queryFn: getFamilyKpis, staleTime: 5 * 60 * 1000 });
   const rows = holdings ?? [];
@@ -38,10 +43,12 @@ function ReportsPage() {
     b.gain += r.unrealised_gain ?? 0;
     map.set(k, b);
   }
-  const buckets = Array.from(map.values()).sort((a, b) => b.current - a.current);
-  const totInv = buckets.reduce((s, r) => s + r.invested, 0);
-  const totCur = buckets.reduce((s, r) => s + r.current, 0);
-  const totGain = buckets.reduce((s, r) => s + r.gain, 0);
+  const rawBuckets = Array.from(map.values());
+  const { sorted: buckets, sortConfig, handleSort } = useSortableTable(rawBuckets, "current", "desc");
+
+  const totInv = rawBuckets.reduce((s, r) => s + r.invested, 0);
+  const totCur = rawBuckets.reduce((s, r) => s + r.current, 0);
+  const totGain = rawBuckets.reduce((s, r) => s + r.gain, 0);
   const totGp = totInv > 0 ? (totGain / totInv) * 100 : 0;
 
   return (
@@ -50,7 +57,7 @@ function ReportsPage() {
         <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-medium">Module</p>
         <h1 className="text-[28px] font-semibold tracking-tight mt-1">Reports</h1>
         <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-          Live AUM {kpis ? inr(kpis.totalAUM, { compact: true }) : "—"} across {rows.length} positions. Generate principal-ready review packs on demand.
+          Live AUM {kpis ? formatAmount(kpis.totalAUM) : "—"} across {rows.length} positions. Generate principal-ready review packs on demand.
         </p>
       </div>
 
@@ -73,17 +80,17 @@ function ReportsPage() {
         ))}
       </div>
 
-      <Card title="Portfolio snapshot — by asset class" subtitle="Live aggregation from sg_family_holdings_import">
+      <Card title="Portfolio snapshot — by asset class" subtitle="Live aggregation from sg_family_holdings_import · click column headers to sort">
         <div className="overflow-x-auto -mx-5">
           <table className="w-full text-[12px]">
             <thead>
-              <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-y border-border bg-secondary/40">
-                <th className="text-left font-semibold px-5 py-2.5">Asset class</th>
-                <th className="text-right font-semibold py-2.5">Invested</th>
-                <th className="text-right font-semibold py-2.5">Current value</th>
-                <th className="text-right font-semibold py-2.5">Unrealised gain</th>
-                <th className="text-right font-semibold py-2.5">Gain%</th>
-                <th className="text-right font-semibold px-5 py-2.5">Allocation%</th>
+              <tr className="border-y border-border bg-secondary/40">
+                <SortableHeader label="Asset class"       sortKey="name"     sortConfig={sortConfig} onSort={handleSort} className={`${TH} text-left px-5`} />
+                <SortableHeader label="Invested"          sortKey="invested"  sortConfig={sortConfig} onSort={handleSort} className={`${TH} text-right`} />
+                <SortableHeader label="Current value"     sortKey="current"   sortConfig={sortConfig} onSort={handleSort} className={`${TH} text-right`} />
+                <SortableHeader label="Unrealised gain"   sortKey="gain"      sortConfig={sortConfig} onSort={handleSort} className={`${TH} text-right`} />
+                <th className={`${TH} text-right`}>Gain%</th>
+                <th className={`${TH} text-right px-5`}>Allocation%</th>
               </tr>
             </thead>
             <tbody>
@@ -93,21 +100,21 @@ function ReportsPage() {
                 return (
                   <tr key={b.name} className="border-b border-border/60 hover:bg-secondary/40 transition-colors">
                     <td className="px-5 py-3 font-medium text-foreground">{b.name}</td>
-                    <td className="py-3 text-right tabular">{inr(b.invested, { compact: true })}</td>
-                    <td className="py-3 text-right font-semibold tabular">{inr(b.current, { compact: true })}</td>
-                    <td className={`py-3 text-right font-semibold tabular ${b.gain >= 0 ? "text-success" : "text-destructive"}`}>{inr(b.gain, { compact: true })}</td>
-                    <td className={`py-3 text-right font-semibold tabular ${gp >= 0 ? "text-success" : "text-destructive"}`}>{pct(gp)}</td>
-                    <td className="px-5 py-3 text-right tabular text-muted-foreground">{alloc.toFixed(2)}%</td>
+                    <td className="py-3 text-right tabular-nums">{formatAmount(b.invested)}</td>
+                    <td className="py-3 text-right font-semibold tabular-nums">{formatAmount(b.current)}</td>
+                    <td className={`py-3 text-right font-semibold tabular-nums ${b.gain >= 0 ? "text-success" : "text-destructive"}`}>{formatAmount(b.gain)}</td>
+                    <td className={`py-3 text-right font-semibold tabular-nums ${gp >= 0 ? "text-success" : "text-destructive"}`}>{pct(gp)}</td>
+                    <td className="px-5 py-3 text-right tabular-nums text-muted-foreground">{alloc.toFixed(2)}%</td>
                   </tr>
                 );
               })}
               <tr className="bg-secondary/40 font-semibold">
                 <td className="px-5 py-3">Total</td>
-                <td className="py-3 text-right tabular">{inr(totInv, { compact: true })}</td>
-                <td className="py-3 text-right tabular">{inr(totCur, { compact: true })}</td>
-                <td className={`py-3 text-right tabular ${totGain >= 0 ? "text-success" : "text-destructive"}`}>{inr(totGain, { compact: true })}</td>
-                <td className={`py-3 text-right tabular ${totGp >= 0 ? "text-success" : "text-destructive"}`}>{pct(totGp)}</td>
-                <td className="px-5 py-3 text-right tabular">100.00%</td>
+                <td className="py-3 text-right tabular-nums">{formatAmount(totInv)}</td>
+                <td className="py-3 text-right tabular-nums">{formatAmount(totCur)}</td>
+                <td className={`py-3 text-right tabular-nums ${totGain >= 0 ? "text-success" : "text-destructive"}`}>{formatAmount(totGain)}</td>
+                <td className={`py-3 text-right tabular-nums ${totGp >= 0 ? "text-success" : "text-destructive"}`}>{pct(totGp)}</td>
+                <td className="px-5 py-3 text-right tabular-nums">100.00%</td>
               </tr>
             </tbody>
           </table>
