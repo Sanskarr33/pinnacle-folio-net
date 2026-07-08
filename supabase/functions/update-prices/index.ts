@@ -207,7 +207,7 @@ function computeUpdates(price: number, row: Row): PriceUpdates {
 Deno.serve(async (req: Request) => {
   // Preflight — browsers send OPTIONS before POST cross-origin
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { status: 200, headers: corsHeaders })
   }
 
   const supabase = createClient(

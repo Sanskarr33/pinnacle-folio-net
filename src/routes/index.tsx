@@ -19,7 +19,7 @@ import { getLastAsOnDate, invalidateCache } from "@/lib/data-service";
 import { useAuth } from "@/contexts/AuthContext";
 
 const EDGE_FN_URL = "https://bdjwhgwoztdocwdvzrem.supabase.co/functions/v1/update-prices";
-const ANON_KEY    = "sb_publishable_dvvYgNznrT8fMI3ZwCw3cg_y0YNBgU4";
+const ANON_KEY    = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkandoZ3dvemtkb2N3ZHZ6cmVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2ODkxNTEsImV4cCI6MjA1OTI2NTE1MX0.TmO3HmGMREh1xRbhFOJuxNVDEBiG0NsNKMbCPdRJAp8";
 const AUTO_REFRESH_INTERVAL_MS = 8 * 60 * 60 * 1000; // 8 hours
 
 export const Route = createFileRoute("/")({
@@ -93,7 +93,7 @@ function PageTitle() {
   const firstName = user?.name?.split(" ")[0] ?? "there";
   const queryClient = useQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [refreshedAt, setRefreshedAt] = useState<string | null>(null);
+  const [lastRefreshed, setLastRefreshed] = useState<string | null>(null);
 
   const { data: lastAsOnDate } = useQuery({
     queryKey: ["lastAsOnDate"],
@@ -115,40 +115,49 @@ function PageTitle() {
 
   const handleRefresh = useCallback(async (silent = false) => {
     if (!silent) setIsRefreshing(true);
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120_000); // 2-min cap
     try {
+      console.log("[Refresh] Calling edge function...");
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 120_000);
+
       const res = await fetch(EDGE_FN_URL, {
         method: "POST",
         signal: controller.signal,
         headers: {
           "Content-Type": "application/json",
-          "apikey": ANON_KEY,
           "Authorization": `Bearer ${ANON_KEY}`,
+          "apikey": ANON_KEY,
         },
+        body: JSON.stringify({}),
       });
-      clearTimeout(timeoutId);
-      if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        console.error("[refresh] edge function error:", res.status, body);
-        throw new Error(`HTTP ${res.status}`);
-      }
-      const json = await res.json() as { updated?: number };
-      console.log("[refresh] result:", json);
-      const now = new Date().toLocaleTimeString("en-IN", {
-        hour: "2-digit", minute: "2-digit",
-      });
-      setRefreshedAt(now);
-      localStorage.setItem("prices_last_refreshed", now);
-      localStorage.setItem("prices_last_refreshed_ts", String(Date.now()));
-      invalidateCache();
+      clearTimeout(timeout);
+
+      console.log("[Refresh] Response status:", res.status);
+      const data = await res.json();
+      console.log("[Refresh] Response data:", data);
+
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+
       await queryClient.invalidateQueries();
-      if (!silent) toast.success(`Prices updated — ${json.updated ?? 0} holdings refreshed`);
-    } catch (err) {
-      clearTimeout(timeoutId);
-      console.error("[refresh] failed:", err);
-      if (!silent) toast.error("Failed to refresh prices. Please try again.");
-      // silent auto-refresh failures are intentionally swallowed
+      invalidateCache();
+
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString("en-IN", {
+        hour: "2-digit", minute: "2-digit", hour12: true,
+      });
+      localStorage.setItem("prices_last_refreshed", timeStr);
+      localStorage.setItem("prices_last_refreshed_ts", String(now.getTime()));
+      setLastRefreshed(timeStr);
+
+      if (!silent) {
+        toast.success(`Prices updated — ${data.updated ?? 0} holdings refreshed`);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      console.error("[Refresh] Error:", msg, err);
+      if (!silent) {
+        toast.error(`Failed to refresh: ${msg}`);
+      }
     } finally {
       if (!silent) setIsRefreshing(false);
     }
@@ -157,7 +166,7 @@ function PageTitle() {
   // On mount: restore last-refresh label + auto-refresh if > 8 hours stale
   useEffect(() => {
     const stored = localStorage.getItem("prices_last_refreshed");
-    setRefreshedAt(stored);
+    setLastRefreshed(stored);
 
     const lastTs = parseInt(localStorage.getItem("prices_last_refreshed_ts") ?? "0", 10);
     if (Date.now() - lastTs > AUTO_REFRESH_INTERVAL_MS) {
@@ -175,7 +184,7 @@ function PageTitle() {
           {`Here's the consolidated position across all SG family entities as on ${asOnFormatted}.`}
           {isRefreshing
             ? <span className="ml-1 opacity-70"> Updating prices…</span>
-            : refreshedAt && <span className="ml-1 opacity-70">{`Prices refreshed at ${refreshedAt}.`}</span>}
+            : lastRefreshed && <span className="ml-1 opacity-70">{`Prices refreshed at ${lastRefreshed}.`}</span>}
         </p>
       </div>
       <div className="flex items-center gap-2">

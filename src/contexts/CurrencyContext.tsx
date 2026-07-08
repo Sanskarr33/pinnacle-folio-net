@@ -37,8 +37,9 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   const [format, setFormatState] = useState<CurrencyFormat>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored === "cr" || stored === "lakh" || stored === "million" || stored === "raw") {
-        return stored;
+      const valid: CurrencyFormat[] = ["cr", "lakh", "million", "raw"];
+      if (stored && valid.includes(stored as CurrencyFormat)) {
+        return stored as CurrencyFormat;
       }
     } catch {
       // localStorage unavailable (SSR)
