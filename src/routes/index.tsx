@@ -15,11 +15,10 @@ import { TopMovers } from "@/components/dashboard/TopMovers";
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
 import { RiskAlerts } from "@/components/dashboard/RiskAlerts";
 import { ActionRequired } from "@/components/dashboard/ActionRequired";
-import { getLastAsOnDate, invalidateCache } from "@/lib/data-service";
+import { getLastAsOnDate } from "@/lib/data-service";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 
-const EDGE_FN_URL = "https://bdjwhgwoztdocwdvzrem.supabase.co/functions/v1/update-prices";
-const ANON_KEY    = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkandoZ3dvemtkb2N3ZHZ6cmVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2ODkxNTEsImV4cCI6MjA1OTI2NTE1MX0.TmO3HmGMREh1xRbhFOJuxNVDEBiG0NsNKMbCPdRJAp8";
 const AUTO_REFRESH_INTERVAL_MS = 8 * 60 * 60 * 1000; // 8 hours
 
 export const Route = createFileRoute("/")({
@@ -116,30 +115,17 @@ function PageTitle() {
   const handleRefresh = useCallback(async (silent = false) => {
     if (!silent) setIsRefreshing(true);
     try {
-      console.log("[Refresh] Calling edge function...");
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 120_000);
+      console.log("[Refresh] Calling edge function via supabase client...");
 
-      const res = await fetch(EDGE_FN_URL, {
-        method: "POST",
-        signal: controller.signal,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${ANON_KEY}`,
-          "apikey": ANON_KEY,
-        },
-        body: JSON.stringify({}),
+      const { data, error } = await supabase.functions.invoke("update-prices", {
+        body: {},
       });
-      clearTimeout(timeout);
 
-      console.log("[Refresh] Response status:", res.status);
-      const data = await res.json();
-      console.log("[Refresh] Response data:", data);
+      console.log("[Refresh] data:", data, "error:", error);
 
-      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+      if (error) throw error;
 
       await queryClient.invalidateQueries();
-      invalidateCache();
 
       const now = new Date();
       const timeStr = now.toLocaleTimeString("en-IN", {
@@ -150,14 +136,12 @@ function PageTitle() {
       setLastRefreshed(timeStr);
 
       if (!silent) {
-        toast.success(`Prices updated — ${data.updated ?? 0} holdings refreshed`);
+        toast.success(`Prices updated — ${data?.updated ?? 0} holdings refreshed`);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
-      console.error("[Refresh] Error:", msg, err);
-      if (!silent) {
-        toast.error(`Failed to refresh: ${msg}`);
-      }
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[Refresh] Error:", msg);
+      if (!silent) toast.error(`Failed to refresh: ${msg}`);
     } finally {
       if (!silent) setIsRefreshing(false);
     }
