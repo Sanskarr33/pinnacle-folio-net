@@ -6,7 +6,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 const PROJECT_URL = "https://bdjwhgwoztdocwdvzrem.supabase.co";
-const PROJECT_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkandoZ3dvemtkb2N3ZHZ6cmVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2ODkxNTEsImV4cCI6MjA1OTI2NTE1MX0.TmO3HmGMREh1xRbhFOJuxNVDEBiG0NsNKMbCPdRJAp8";
+const PROJECT_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkandoZ3dvenRkb2N3ZHZ6cmVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MzM1NzksImV4cCI6MjA5NjIwOTU3OX0.Td8dWDrDRNHh_sFbVpo2mNcbXr3qZEvXbaMU3sUKXis";
 
 if (typeof window !== "undefined") {
   // eslint-disable-next-line no-console
