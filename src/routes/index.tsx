@@ -15,7 +15,7 @@ import { TopMovers } from "@/components/dashboard/TopMovers";
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
 import { RiskAlerts } from "@/components/dashboard/RiskAlerts";
 import { ActionRequired } from "@/components/dashboard/ActionRequired";
-import { getLastAsOnDate } from "@/lib/data-service";
+import { getLastAsOnDate, invalidateCache } from "@/lib/data-service";
 import { useAuth } from "@/contexts/AuthContext";
 
 const REFRESH_URL = "/.netlify/functions/refresh-prices";
@@ -125,6 +125,7 @@ function PageTitle() {
       const data = await res.json();
       console.log("[Refresh] data:", data);
 
+      invalidateCache();
       await queryClient.invalidateQueries();
 
       const now = new Date();
