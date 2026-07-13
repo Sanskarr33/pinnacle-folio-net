@@ -17,7 +17,9 @@ import { RiskAlerts } from "@/components/dashboard/RiskAlerts";
 import { ActionRequired } from "@/components/dashboard/ActionRequired";
 import { getLastAsOnDate } from "@/lib/data-service";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
+
+const EDGE_FN_URL = "https://bdjwhgwoztdocwdvzrem.supabase.co/functions/v1/update-prices";
+const EDGE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkandoZ3dvenRkb2N3ZHZ6cmVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MzM1NzksImV4cCI6MjA5NjIwOTU3OX0.Td8dWDrDRNHh_sFbVpo2mNcbXr3qZEvXbaMU3sUKXis";
 
 const AUTO_REFRESH_INTERVAL_MS = 8 * 60 * 60 * 1000; // 8 hours
 
@@ -115,15 +117,22 @@ function PageTitle() {
   const handleRefresh = useCallback(async (silent = false) => {
     if (!silent) setIsRefreshing(true);
     try {
-      console.log("[Refresh] Calling edge function via supabase client...");
-
-      const { data, error } = await supabase.functions.invoke("update-prices", {
-        body: {},
+      console.log("[Refresh] Calling edge function directly...");
+      const res = await fetch(EDGE_FN_URL, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${EDGE_ANON_KEY}`,
+          "apikey": EDGE_ANON_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
       });
-
-      console.log("[Refresh] data:", data, "error:", error);
-
-      if (error) throw error;
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Edge function ${res.status}: ${text}`);
+      }
+      const data = await res.json();
+      console.log("[Refresh] data:", data);
 
       await queryClient.invalidateQueries();
 
@@ -140,7 +149,7 @@ function PageTitle() {
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error("[Refresh] Error:", msg);
+      console.error("[Refresh] Error:", err);
       if (!silent) toast.error(`Failed to refresh: ${msg}`);
     } finally {
       if (!silent) setIsRefreshing(false);
