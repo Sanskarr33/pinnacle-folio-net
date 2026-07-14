@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Users, Building2, PieChart, TrendingUp, Landmark,
   LineChart, Briefcase, Boxes, Shield, Receipt, FileBarChart,
   ArrowLeftRight, Coins, Timer, ClipboardCheck, Upload, Settings, Globe2, BarChart2,
-  ShieldCheck,
+  ShieldCheck, FilePlus2,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -32,6 +32,7 @@ const products = [
 ];
 
 const ops = [
+  { title: "Add Transaction",    url: "/add-transaction",icon: FilePlus2      },
   { title: "Transactions",       url: "/transactions",   icon: ArrowLeftRight },
   { title: "Capital Gains",      url: "/capital-gains",  icon: Receipt        },
   { title: "Exit Load Tracker",  url: "/exit-load",      icon: Timer          },
