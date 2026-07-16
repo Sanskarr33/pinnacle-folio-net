@@ -608,6 +608,7 @@ function AdvisorProfile({ advisorId, onBack }: { advisorId: string; onBack: () =
       {showMeetingForm && (
         <MeetingForm
           advisorId={advisorId}
+          advisorName={advisor.name}
           onClose={() => setShowMeetingForm(false)}
           onSaved={() => {
             qc.invalidateQueries({ queryKey: ["advisor-meetings", advisorId] });
@@ -778,8 +779,9 @@ function AdvisorForm({ advisor, onClose, onSaved }: {
 
 // ─── Meeting Form ─────────────────────────────────────────────────────────────
 
-function MeetingForm({ advisorId, onClose, onSaved }: {
+function MeetingForm({ advisorId, advisorName, onClose, onSaved }: {
   advisorId: string;
+  advisorName: string;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -805,7 +807,7 @@ function MeetingForm({ advisorId, onClose, onSaved }: {
       const res = await fetch("/.netlify/functions/ai-extract", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes: rawNotes }),
+        body: JSON.stringify({ rawNotes, advisorName }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: res.statusText }));

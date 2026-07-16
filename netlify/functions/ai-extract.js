@@ -1,7 +1,14 @@
-// AI meeting note extraction proxy.
-// Requires ANTHROPIC_API_KEY set in Netlify dashboard → Site Settings → Environment Variables.
+export const handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: 'Method not allowed' };
+  }
 
-const SYSTEM_PROMPT = `You are an AI assistant for a family office. Analyze these meeting notes and extract structured information. Return ONLY valid JSON with this exact structure:
+  try {
+    const { rawNotes, advisorName } = JSON.parse(event.body);
+
+    const systemPrompt = `You are an AI assistant for a family office.
+Analyze these meeting notes and extract structured information.
+Return ONLY valid JSON with this exact structure, no other text:
 {
   "summary": "3-4 sentence summary of the meeting",
   "key_topics": ["topic1", "topic2"],
@@ -20,76 +27,47 @@ const SYSTEM_PROMPT = `You are an AI assistant for a family office. Analyze thes
   "next_meeting_suggestion": "suggested next meeting topic if any"
 }`;
 
-export const handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: { 'Access-Control-Allow-Origin': '*' }, body: '' };
-  }
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
-  }
-
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured in Netlify environment variables' }),
-    };
-  }
-
-  let notes = '';
-  try {
-    const body = JSON.parse(event.body || '{}');
-    notes = body.notes ?? '';
-  } catch {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON body' }) };
-  }
-
-  if (!notes.trim()) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'notes field is required' }) };
-  }
-
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+        'HTTP-Referer': 'https://commandwealthsmc.netlify.app',
+        'X-Title': 'SG Family Wealth Command Centre'
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: `Meeting notes to analyse:\n\n${notes}` }],
-      }),
+        model: 'anthropic/claude-sonnet-4-6',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Advisor: ${advisorName}\n\nMeeting Notes:\n${rawNotes}` }
+        ],
+        max_tokens: 2000
+      })
     });
 
-    if (!response.ok) {
-      const err = await response.text();
-      return { statusCode: 502, body: JSON.stringify({ error: `Anthropic API error: ${response.status} ${err}` }) };
-    }
-
     const data = await response.json();
-    const text = data.content?.[0]?.text ?? '';
 
-    // Extract JSON block (Claude sometimes adds prose around it)
-    const match = text.match(/\{[\s\S]*\}/);
-    if (!match) {
-      return { statusCode: 502, body: JSON.stringify({ error: 'Could not parse JSON from AI response', raw: text }) };
+    if (!response.ok) {
+      throw new Error(data.error?.message || 'OpenRouter API error');
     }
 
-    const parsed = JSON.parse(match[0]);
+    const content = data.choices[0].message.content;
+
+    // Clean JSON response
+    const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const parsed = JSON.parse(cleanContent);
+
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(parsed),
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify(parsed)
     };
+
   } catch (err) {
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: err instanceof Error ? err.message : String(err) }),
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: err.message })
     };
   }
 };
