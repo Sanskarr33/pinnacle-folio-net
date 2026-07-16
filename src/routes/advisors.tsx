@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Plus, ChevronLeft, Calendar, MessageSquare, CheckCircle,
-  TrendingUp, Edit2, Users, Phone, Mail, X, Loader2, AlertTriangle,
+  TrendingUp, Edit2, Users, Phone, Mail, X, Loader2, AlertTriangle, Clipboard,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
@@ -794,33 +794,49 @@ function MeetingForm({ advisorId, advisorName, onClose, onSaved }: {
     next_meeting_date: "",
   });
   const [rawNotes, setRawNotes] = useState("");
-  const [extracting, setExtracting] = useState(false);
+  const [jsonResponse, setJsonResponse] = useState("");
+  const [parseError, setParseError] = useState("");
+  const [copied, setCopied] = useState(false);
   const [editedSummary, setEditedSummary] = useState("");
   const [editedItems, setEditedItems] = useState<ExtractedItem[]>([]);
   const [autoDetect, setAutoDetect] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const extractWithAI = async () => {
-    if (!rawNotes.trim()) { toast.error("Please enter meeting notes first"); return; }
-    setExtracting(true);
+  const copyPrompt = async () => {
+    const schema = `{
+  "summary": "3-4 sentence summary of the meeting",
+  "key_topics": ["topic1", "topic2"],
+  "action_items": [
+    {
+      "action_type": "BUY|SELL|HOLD|REVIEW|REBALANCE|OTHER",
+      "description": "Clear description of what needs to be done",
+      "security_name": "stock or fund name if mentioned, else null",
+      "asset_class": "Direct Equity|Equity MF|Debt MF|PMS|AIF|Bonds|REIT|ETF|null",
+      "entity_name": "SG|SMC|SSI|Veer|SMO|SSG|Suhel|null",
+      "target_amount": null,
+      "timeline": "Immediate|This Week|This Month|This Quarter|null",
+      "priority": "High|Medium|Low"
+    }
+  ],
+  "next_meeting_suggestion": "suggested next meeting topic or empty string"
+}`;
+    const prompt = `You are analyzing meeting notes for a family office (SG Family Wealth). Extract structured information and return ONLY valid JSON matching the schema below — no prose, no markdown code fences, just raw JSON.\n\nSchema:\n${schema}\n\nAdvisor: ${advisorName}\n\nMeeting Notes:\n${rawNotes.trim() || "[paste your meeting notes here]"}`;
+    await navigator.clipboard.writeText(prompt);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+
+  const parseAndContinue = () => {
+    if (!jsonResponse.trim()) { setParseError("Paste the JSON from ChatGPT first."); return; }
     try {
-      const res = await fetch("/.netlify/functions/ai-extract", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rawNotes, advisorName }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: res.statusText }));
-        throw new Error(err.error ?? `HTTP ${res.status}`);
-      }
-      const data = await res.json();
+      const clean = jsonResponse.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      const data = JSON.parse(clean);
       setEditedSummary(data.summary ?? "");
       setEditedItems(data.action_items ?? []);
+      setParseError("");
       setStep(3);
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "AI extraction failed");
-    } finally {
-      setExtracting(false);
+    } catch {
+      setParseError("Invalid JSON — make sure you copied the full response from ChatGPT without any extra text.");
     }
   };
 
@@ -962,22 +978,57 @@ function MeetingForm({ advisorId, advisorName, onClose, onSaved }: {
 
           {step === 2 && (
             <>
-              <p className="text-[12px] text-muted-foreground">
-                Paste raw notes, emails, WhatsApp messages, or any text. Click "Extract with AI" to automatically find action items.
-              </p>
-              <textarea
-                value={rawNotes}
-                onChange={e => setRawNotes(e.target.value)}
-                placeholder="Paste meeting notes here…"
-                rows={14}
-                className="w-full px-3 py-2.5 rounded-md border border-border bg-background text-[13px] text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
-              />
+              <div className="bg-secondary/50 rounded-lg px-4 py-3 space-y-1 text-[12px] text-muted-foreground">
+                <p className="font-medium text-foreground text-[13px]">Free — no API key needed</p>
+                <p>1. Paste your meeting notes below</p>
+                <p>2. Click "Copy Prompt for ChatGPT" — copies notes + JSON schema as one prompt</p>
+                <p>3. Paste in ChatGPT (or any LLM) → get JSON back</p>
+                <p>4. Paste the JSON response below → click "Parse & Continue"</p>
+              </div>
+
+              <div>
+                <span className={labelClass}>Meeting Notes</span>
+                <textarea
+                  value={rawNotes}
+                  onChange={e => setRawNotes(e.target.value)}
+                  placeholder="Paste meeting notes, email thread, WhatsApp messages…"
+                  rows={7}
+                  className="mt-1 w-full px-3 py-2.5 rounded-md border border-border bg-background text-[13px] text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                />
+              </div>
+
               <button
-                onClick={extractWithAI}
-                disabled={extracting || !rawNotes.trim()}
-                className="w-full h-10 rounded-md bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                onClick={copyPrompt}
+                className="flex items-center justify-center gap-2 w-full h-10 rounded-md border-2 border-primary/60 text-primary text-[13px] font-medium hover:bg-primary/5 transition-colors"
               >
-                {extracting ? <><Loader2 className="h-4 w-4 animate-spin" />Extracting…</> : "✨ Extract with AI"}
+                <Clipboard className="h-4 w-4" />
+                {copied ? "✓ Copied! Paste in ChatGPT" : "Copy Prompt for ChatGPT"}
+              </button>
+
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-[11px] text-muted-foreground shrink-0">Paste ChatGPT's JSON response below</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+
+              <div>
+                <span className={labelClass}>JSON Response from ChatGPT</span>
+                <textarea
+                  value={jsonResponse}
+                  onChange={e => { setJsonResponse(e.target.value); setParseError(""); }}
+                  placeholder={'{\n  "summary": "...",\n  "action_items": [...]\n}'}
+                  rows={7}
+                  className="mt-1 w-full px-3 py-2.5 rounded-md border border-border bg-background text-[12px] text-foreground font-mono placeholder:text-muted-foreground/30 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                />
+                {parseError && <p className="text-[12px] text-red-500 mt-1.5">{parseError}</p>}
+              </div>
+
+              <button
+                onClick={parseAndContinue}
+                disabled={!jsonResponse.trim()}
+                className="w-full h-10 rounded-md bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+              >
+                Parse & Continue →
               </button>
             </>
           )}
@@ -1061,12 +1112,6 @@ function MeetingForm({ advisorId, advisorName, onClose, onSaved }: {
             {step === 1 ? "Cancel" : "Back"}
           </button>
           <div className="flex gap-2">
-            {step === 2 && (
-              <button onClick={() => setStep(3)}
-                className="px-4 h-9 rounded-md border border-border text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-                Skip AI
-              </button>
-            )}
             {step < 3 ? (
               <button
                 onClick={() => setStep(s => (s + 1) as 1 | 2 | 3)}
