@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 const overview = [
   { title: "Dashboard",        url: "/",           icon: LayoutDashboard },
   { title: "Analytics",        url: "/analytics",  icon: BarChart2       },
+  { title: "Advisors",         url: "/advisors",   icon: Briefcase       },
   { title: "Family Overview",  url: "/family",     icon: Users           },
   { title: "Entities",         url: "/entities",   icon: Building2       },
   { title: "Asset Allocation", url: "/allocation", icon: PieChart        },
