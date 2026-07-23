@@ -16,6 +16,7 @@ import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as PmsRouteImport } from './routes/pms'
 import { Route as MutualFundsRouteImport } from './routes/mutual-funds'
 import { Route as MeetingsRouteImport } from './routes/meetings'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as InternationalRouteImport } from './routes/international'
 import { Route as FamilyRouteImport } from './routes/family'
 import { Route as ExitLoadRouteImport } from './routes/exit-load'
@@ -65,6 +66,11 @@ const MutualFundsRoute = MutualFundsRouteImport.update({
 const MeetingsRoute = MeetingsRouteImport.update({
   id: '/meetings',
   path: '/meetings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InternationalRoute = InternationalRouteImport.update({
@@ -159,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/exit-load': typeof ExitLoadRoute
   '/family': typeof FamilyRoute
   '/international': typeof InternationalRoute
+  '/login': typeof LoginRoute
   '/meetings': typeof MeetingsRoute
   '/mutual-funds': typeof MutualFundsRoute
   '/pms': typeof PmsRoute
@@ -183,6 +190,7 @@ export interface FileRoutesByTo {
   '/exit-load': typeof ExitLoadRoute
   '/family': typeof FamilyRoute
   '/international': typeof InternationalRoute
+  '/login': typeof LoginRoute
   '/meetings': typeof MeetingsRoute
   '/mutual-funds': typeof MutualFundsRoute
   '/pms': typeof PmsRoute
@@ -208,6 +216,7 @@ export interface FileRoutesById {
   '/exit-load': typeof ExitLoadRoute
   '/family': typeof FamilyRoute
   '/international': typeof InternationalRoute
+  '/login': typeof LoginRoute
   '/meetings': typeof MeetingsRoute
   '/mutual-funds': typeof MutualFundsRoute
   '/pms': typeof PmsRoute
@@ -234,6 +243,7 @@ export interface FileRouteTypes {
     | '/exit-load'
     | '/family'
     | '/international'
+    | '/login'
     | '/meetings'
     | '/mutual-funds'
     | '/pms'
@@ -258,6 +268,7 @@ export interface FileRouteTypes {
     | '/exit-load'
     | '/family'
     | '/international'
+    | '/login'
     | '/meetings'
     | '/mutual-funds'
     | '/pms'
@@ -282,6 +293,7 @@ export interface FileRouteTypes {
     | '/exit-load'
     | '/family'
     | '/international'
+    | '/login'
     | '/meetings'
     | '/mutual-funds'
     | '/pms'
@@ -307,6 +319,7 @@ export interface RootRouteChildren {
   ExitLoadRoute: typeof ExitLoadRoute
   FamilyRoute: typeof FamilyRoute
   InternationalRoute: typeof InternationalRoute
+  LoginRoute: typeof LoginRoute
   MeetingsRoute: typeof MeetingsRoute
   MutualFundsRoute: typeof MutualFundsRoute
   PmsRoute: typeof PmsRoute
@@ -365,6 +378,13 @@ declare module '@tanstack/react-router' {
       path: '/meetings'
       fullPath: '/meetings'
       preLoaderRoute: typeof MeetingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/international': {
@@ -491,6 +511,7 @@ const rootRouteChildren: RootRouteChildren = {
   ExitLoadRoute: ExitLoadRoute,
   FamilyRoute: FamilyRoute,
   InternationalRoute: InternationalRoute,
+  LoginRoute: LoginRoute,
   MeetingsRoute: MeetingsRoute,
   MutualFundsRoute: MutualFundsRoute,
   PmsRoute: PmsRoute,

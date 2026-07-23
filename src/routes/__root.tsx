@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -15,6 +16,8 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { TopHeader } from "@/components/TopHeader";
 import { UnitProvider } from "@/lib/units";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -105,19 +108,55 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <UnitProvider>
-        <SidebarProvider>
-          <div className="flex min-h-screen w-full bg-background">
-            <AppSidebar />
-            <div className="flex-1 flex flex-col min-w-0">
-              <TopHeader />
-              <main className="flex-1 min-w-0">
-                <Outlet />
-              </main>
-            </div>
-          </div>
-        </SidebarProvider>
-      </UnitProvider>
+      <AuthProvider>
+        <UnitProvider>
+          <AppShell />
+          <Toaster position="bottom-right" />
+        </UnitProvider>
+      </AuthProvider>
     </QueryClientProvider>
+  );
+}
+
+/**
+ * Auth gate and layout switch.
+ *
+ * This dashboard exposes the full family book — holdings, folio numbers, advisor
+ * minutes — so it must never render without a signed-in user. Unauthenticated
+ * traffic is redirected to /login and the app shell is not mounted at all, rather
+ * than merely hidden.
+ */
+function AppShell() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  useEffect(() => {
+    if (!user && pathname !== "/login") {
+      router.navigate({ to: "/login", replace: true });
+    }
+    if (user && pathname === "/login") {
+      router.navigate({ to: "/", replace: true });
+    }
+  }, [user, pathname, router]);
+
+  // Login page renders full-screen, without the sidebar.
+  if (pathname === "/login") return <Outlet />;
+
+  // Blank while the redirect fires — never flash the dashboard to a signed-out user.
+  if (!user) return <div className="min-h-screen bg-background" />;
+
+  return (
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full bg-background">
+        <AppSidebar />
+        <div className="flex-1 flex flex-col min-w-0">
+          <TopHeader />
+          <main className="flex-1 min-w-0">
+            <Outlet />
+          </main>
+        </div>
+      </div>
+    </SidebarProvider>
   );
 }
