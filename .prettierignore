@@ -6,3 +6,6 @@ pnpm-lock.yaml
 package-lock.json
 bun.lock
 routeTree.gen.ts
+
+# Netlify functions came from the existing deployment — left byte-for-byte
+netlify

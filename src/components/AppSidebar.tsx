@@ -5,6 +5,10 @@ import {
   Building2,
   PieChart,
   BarChart3,
+  ShieldCheck,
+  PlusCircle,
+  FlaskConical,
+  Scale,
   TrendingUp,
   Landmark,
   LineChart,
@@ -47,6 +51,8 @@ const overview: Item[] = [
   { title: "Entities", url: "/entities", icon: Building2 },
   { title: "Asset Allocation", url: "/allocation", icon: PieChart },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
+  { title: "Rebalancing", url: "/rebalancing", icon: Scale },
+  { title: "Simulator", url: "/simulator", icon: FlaskConical },
 ];
 
 const products: Item[] = [
@@ -63,6 +69,7 @@ const products: Item[] = [
 
 const ops: Item[] = [
   { title: "Acquisitions", url: "/transactions", icon: ArrowLeftRight },
+  { title: "Add Transaction", url: "/add-transaction", icon: PlusCircle },
   { title: "Capital Gains", url: "/capital-gains", icon: Receipt },
   { title: "Exit Load Tracker", url: "/exit-load", icon: Timer },
   { title: "Advisor Meetings", url: "/meetings", icon: NotebookPen },
@@ -70,6 +77,7 @@ const ops: Item[] = [
   { title: "Reports", url: "/reports", icon: FileBarChart },
   { title: "Data Source", url: "/data-import", icon: Database },
   { title: "Settings", url: "/settings", icon: Settings },
+  { title: "Admin", url: "/admin", icon: ShieldCheck },
 ];
 
 export function AppSidebar() {

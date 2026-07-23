@@ -97,6 +97,24 @@ export async function fetchTransactions(): Promise<TransactionsSnapshot> {
 }
 
 /**
+ * Clear cached reads after a write.
+ *
+ * The book itself is a bundled snapshot, so it cannot change at runtime — but the
+ * Supabase-backed comparison and history queries can, and a page that has just
+ * inserted a transaction should not keep showing pre-insert figures. Callers pass
+ * their queryClient; without one this is a no-op rather than an error, so callers
+ * outside React need no special case.
+ */
+export function invalidateCache(queryClient?: {
+  invalidateQueries: (f: { queryKey: readonly unknown[] }) => void;
+}) {
+  if (!queryClient) return;
+  for (const key of [["snapshotComparison"], ["portfolioHistory"], ["book"]]) {
+    queryClient.invalidateQueries({ queryKey: key });
+  }
+}
+
+/**
  * Compare the bundled workbook snapshot against what is still sitting in Supabase.
  * Supabase failures are swallowed — this panel is informational, never load-bearing.
  */
@@ -137,4 +155,74 @@ export async function getSnapshotComparison(): Promise<{
   }
 
   return { workbook, supabase: db };
+}
+
+// ─── History ──────────────────────────────────────────────────────────────────
+
+export interface HistoryPoint {
+  asOn: string;
+  value: number;
+  invested: number;
+  gain: number;
+  gainPct: number;
+  rows: number;
+  byAssetClass: Record<string, number>;
+}
+
+/**
+ * Every dated snapshot Supabase holds, oldest first.
+ *
+ * This is the ONLY part of the app that needs the database: the bundled snapshot is
+ * a single point in time, so trend can only come from the dated rows the daily sync
+ * accumulates. Returns [] rather than throwing when Supabase is unreachable — a
+ * missing trend chart should never take the page down.
+ */
+export async function fetchHistory(): Promise<HistoryPoint[]> {
+  if (!supabase) return [];
+  try {
+    const byDate = new Map<
+      string,
+      { v: number; i: number; n: number; ac: Record<string, number> }
+    >();
+    const PAGE = 1000;
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabase
+        .from("portfolio_detailed_holdings")
+        .select("as_on_date,current_value,invested_value,asset_class")
+        .range(from, from + PAGE - 1);
+      if (error) return [];
+      const page = (data ?? []) as Array<{
+        as_on_date: string | null;
+        current_value: number | null;
+        invested_value: number | null;
+        asset_class: string | null;
+      }>;
+      for (const r of page) {
+        if (!r.as_on_date) continue;
+        const e = byDate.get(r.as_on_date) ?? { v: 0, i: 0, n: 0, ac: {} };
+        const v = r.current_value ?? 0;
+        e.v += v;
+        e.i += r.invested_value ?? 0;
+        e.n += 1;
+        const k = r.asset_class?.trim() || "Unclassified";
+        e.ac[k] = (e.ac[k] ?? 0) + v;
+        byDate.set(r.as_on_date, e);
+      }
+      if (page.length < PAGE) break;
+    }
+
+    return [...byDate.entries()]
+      .map(([asOn, e]) => ({
+        asOn,
+        value: e.v,
+        invested: e.i,
+        gain: e.v - e.i,
+        gainPct: e.i > 0 ? ((e.v - e.i) / e.i) * 100 : 0,
+        rows: e.n,
+        byAssetClass: e.ac,
+      }))
+      .sort((a, b) => a.asOn.localeCompare(b.asOn));
+  } catch {
+    return [];
+  }
 }

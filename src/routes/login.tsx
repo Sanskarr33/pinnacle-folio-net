@@ -17,7 +17,15 @@ export const Route = createFileRoute("/login")({
 
 // ─── PIN Input — 4 individual boxes with auto-advance ─────────────────────────
 
-function PinInput({ value, onChange, disabled }: { value: string; onChange: (v: string) => void; disabled?: boolean }) {
+function PinInput({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  disabled?: boolean;
+}) {
   const refs = [
     useRef<HTMLInputElement>(null),
     useRef<HTMLInputElement>(null),
@@ -132,7 +140,12 @@ function LeftPanel() {
         />
         {/* Data points */}
         {[
-          [0, 170], [120, 118], [230, 68], [350, 22], [470, 4], [560, 3],
+          [0, 170],
+          [120, 118],
+          [230, 68],
+          [350, 22],
+          [470, 4],
+          [560, 3],
         ].map(([x, y], i) => (
           <circle key={i} cx={x} cy={y} r="3" fill="white" opacity="0.6" />
         ))}
@@ -144,13 +157,18 @@ function LeftPanel() {
         <div className="flex items-center gap-3">
           <div
             className="flex h-11 w-11 items-center justify-center rounded-xl text-white font-bold text-sm tracking-tight shrink-0"
-            style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.15)" }}
+            style={{
+              background: "rgba(255,255,255,0.12)",
+              border: "1px solid rgba(255,255,255,0.15)",
+            }}
           >
             SG
           </div>
           <div className="flex flex-col leading-tight">
             <span className="text-[14px] font-semibold text-white">SG Family Wealth</span>
-            <span className="text-[10px] uppercase tracking-[0.2em] text-white/50">Command Centre</span>
+            <span className="text-[10px] uppercase tracking-[0.2em] text-white/50">
+              Command Centre
+            </span>
           </div>
         </div>
 
@@ -160,10 +178,13 @@ function LeftPanel() {
             Private · Secure · Consolidated
           </p>
           <h1 className="text-[38px] font-bold text-white leading-[1.15] tracking-tight max-w-md">
-            Your family office<br />command centre.
+            Your family office
+            <br />
+            command centre.
           </h1>
           <p className="mt-4 text-[15px] text-white/55 max-w-sm leading-relaxed">
-            Real-time portfolio intelligence, consolidated across all entities, asset classes, and advisors.
+            Real-time portfolio intelligence, consolidated across all entities, asset classes, and
+            advisors.
           </p>
 
           <div className="mt-10 space-y-4">
@@ -218,8 +239,14 @@ function LoginPage() {
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
-    if (!siName.trim()) { toast.error("Please enter your name"); return; }
-    if (siPin.length !== 4) { toast.error("PIN must be exactly 4 digits"); return; }
+    if (!siName.trim()) {
+      toast.error("Please enter your name");
+      return;
+    }
+    if (siPin.length !== 4) {
+      toast.error("PIN must be exactly 4 digits");
+      return;
+    }
 
     setSiLoading(true);
     try {
@@ -265,9 +292,18 @@ function LoginPage() {
 
   async function handleRequestAccess(e: React.FormEvent) {
     e.preventDefault();
-    if (!raName.trim()) { toast.error("Please enter your name"); return; }
-    if (raPin.length !== 4) { toast.error("PIN must be exactly 4 digits"); return; }
-    if (raPin !== raConfirm) { toast.error("PINs do not match"); return; }
+    if (!raName.trim()) {
+      toast.error("Please enter your name");
+      return;
+    }
+    if (raPin.length !== 4) {
+      toast.error("PIN must be exactly 4 digits");
+      return;
+    }
+    if (raPin !== raConfirm) {
+      toast.error("PINs do not match");
+      return;
+    }
 
     setRaLoading(true);
     try {
@@ -337,12 +373,16 @@ function LoginPage() {
             </div>
             <div>
               <p className="text-[13px] font-semibold">SG Family Wealth</p>
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Command Centre</p>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                Command Centre
+              </p>
             </div>
           </div>
 
           <h2 className="text-[24px] font-bold tracking-tight text-foreground">Welcome back</h2>
-          <p className="mt-1 text-[13px] text-muted-foreground">Sign in to access your family portfolio.</p>
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            Sign in to access your family portfolio.
+          </p>
 
           {/* Tabs */}
           <div className="mt-6 flex p-1 rounded-xl bg-secondary/60 border border-border gap-1">
@@ -397,7 +437,11 @@ function LoginPage() {
 
               <p className="text-center text-[11.5px] text-muted-foreground">
                 Don't have access?{" "}
-                <button type="button" onClick={() => setTab("request")} className="text-primary hover:underline">
+                <button
+                  type="button"
+                  onClick={() => setTab("request")}
+                  className="text-primary hover:underline"
+                >
                   Request it here
                 </button>
               </p>
@@ -414,10 +458,17 @@ function LoginPage() {
                   </div>
                   <p className="text-[14px] font-semibold text-foreground">Request submitted</p>
                   <p className="text-[12.5px] text-muted-foreground leading-relaxed">
-                    Your access request is pending approval by the admin. You'll be able to sign in once approved.
+                    Your access request is pending approval by the admin. You'll be able to sign in
+                    once approved.
                   </p>
                   <button
-                    onClick={() => { setTab("signin"); setRaSuccess(false); setRaName(""); setRaPin(""); setRaConfirm(""); }}
+                    onClick={() => {
+                      setTab("signin");
+                      setRaSuccess(false);
+                      setRaName("");
+                      setRaPin("");
+                      setRaConfirm("");
+                    }}
                     className="mt-2 text-[12.5px] text-primary hover:underline"
                   >
                     Back to Sign In
@@ -462,7 +513,13 @@ function LoginPage() {
 
                   <button
                     type="submit"
-                    disabled={raLoading || raPin.length !== 4 || raConfirm.length !== 4 || raPin !== raConfirm || !raName.trim()}
+                    disabled={
+                      raLoading ||
+                      raPin.length !== 4 ||
+                      raConfirm.length !== 4 ||
+                      raPin !== raConfirm ||
+                      !raName.trim()
+                    }
                     className="mt-2 w-full h-11 rounded-xl bg-primary text-primary-foreground text-[13px] font-semibold tracking-wide hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                   >
                     {raLoading && (
@@ -473,7 +530,11 @@ function LoginPage() {
 
                   <p className="text-center text-[11.5px] text-muted-foreground">
                     Already have access?{" "}
-                    <button type="button" onClick={() => setTab("signin")} className="text-primary hover:underline">
+                    <button
+                      type="button"
+                      onClick={() => setTab("signin")}
+                      className="text-primary hover:underline"
+                    >
                       Sign in
                     </button>
                   </p>

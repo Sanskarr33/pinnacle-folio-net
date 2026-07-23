@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UlipsRouteImport } from './routes/ulips'
 import { Route as TransactionsRouteImport } from './routes/transactions'
+import { Route as SimulatorRouteImport } from './routes/simulator'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as RebalancingRouteImport } from './routes/rebalancing'
 import { Route as PmsRouteImport } from './routes/pms'
 import { Route as MutualFundsRouteImport } from './routes/mutual-funds'
 import { Route as MeetingsRouteImport } from './routes/meetings'
@@ -31,6 +33,8 @@ import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AllocationRouteImport } from './routes/allocation'
 import { Route as AifsRouteImport } from './routes/aifs'
 import { Route as AdvisorReviewRouteImport } from './routes/advisor-review'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AddTransactionRouteImport } from './routes/add-transaction'
 import { Route as IndexRouteImport } from './routes/index'
 
 const UlipsRoute = UlipsRouteImport.update({
@@ -43,6 +47,11 @@ const TransactionsRoute = TransactionsRouteImport.update({
   path: '/transactions',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SimulatorRoute = SimulatorRouteImport.update({
+  id: '/simulator',
+  path: '/simulator',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -51,6 +60,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RebalancingRoute = RebalancingRouteImport.update({
+  id: '/rebalancing',
+  path: '/rebalancing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PmsRoute = PmsRouteImport.update({
@@ -143,6 +157,16 @@ const AdvisorReviewRoute = AdvisorReviewRouteImport.update({
   path: '/advisor-review',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AddTransactionRoute = AddTransactionRouteImport.update({
+  id: '/add-transaction',
+  path: '/add-transaction',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -151,6 +175,8 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/add-transaction': typeof AddTransactionRoute
+  '/admin': typeof AdminRoute
   '/advisor-review': typeof AdvisorReviewRoute
   '/aifs': typeof AifsRoute
   '/allocation': typeof AllocationRoute
@@ -169,13 +195,17 @@ export interface FileRoutesByFullPath {
   '/meetings': typeof MeetingsRoute
   '/mutual-funds': typeof MutualFundsRoute
   '/pms': typeof PmsRoute
+  '/rebalancing': typeof RebalancingRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
+  '/simulator': typeof SimulatorRoute
   '/transactions': typeof TransactionsRoute
   '/ulips': typeof UlipsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/add-transaction': typeof AddTransactionRoute
+  '/admin': typeof AdminRoute
   '/advisor-review': typeof AdvisorReviewRoute
   '/aifs': typeof AifsRoute
   '/allocation': typeof AllocationRoute
@@ -194,14 +224,18 @@ export interface FileRoutesByTo {
   '/meetings': typeof MeetingsRoute
   '/mutual-funds': typeof MutualFundsRoute
   '/pms': typeof PmsRoute
+  '/rebalancing': typeof RebalancingRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
+  '/simulator': typeof SimulatorRoute
   '/transactions': typeof TransactionsRoute
   '/ulips': typeof UlipsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/add-transaction': typeof AddTransactionRoute
+  '/admin': typeof AdminRoute
   '/advisor-review': typeof AdvisorReviewRoute
   '/aifs': typeof AifsRoute
   '/allocation': typeof AllocationRoute
@@ -220,8 +254,10 @@ export interface FileRoutesById {
   '/meetings': typeof MeetingsRoute
   '/mutual-funds': typeof MutualFundsRoute
   '/pms': typeof PmsRoute
+  '/rebalancing': typeof RebalancingRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
+  '/simulator': typeof SimulatorRoute
   '/transactions': typeof TransactionsRoute
   '/ulips': typeof UlipsRoute
 }
@@ -229,6 +265,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/add-transaction'
+    | '/admin'
     | '/advisor-review'
     | '/aifs'
     | '/allocation'
@@ -247,13 +285,17 @@ export interface FileRouteTypes {
     | '/meetings'
     | '/mutual-funds'
     | '/pms'
+    | '/rebalancing'
     | '/reports'
     | '/settings'
+    | '/simulator'
     | '/transactions'
     | '/ulips'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/add-transaction'
+    | '/admin'
     | '/advisor-review'
     | '/aifs'
     | '/allocation'
@@ -272,13 +314,17 @@ export interface FileRouteTypes {
     | '/meetings'
     | '/mutual-funds'
     | '/pms'
+    | '/rebalancing'
     | '/reports'
     | '/settings'
+    | '/simulator'
     | '/transactions'
     | '/ulips'
   id:
     | '__root__'
     | '/'
+    | '/add-transaction'
+    | '/admin'
     | '/advisor-review'
     | '/aifs'
     | '/allocation'
@@ -297,14 +343,18 @@ export interface FileRouteTypes {
     | '/meetings'
     | '/mutual-funds'
     | '/pms'
+    | '/rebalancing'
     | '/reports'
     | '/settings'
+    | '/simulator'
     | '/transactions'
     | '/ulips'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AddTransactionRoute: typeof AddTransactionRoute
+  AdminRoute: typeof AdminRoute
   AdvisorReviewRoute: typeof AdvisorReviewRoute
   AifsRoute: typeof AifsRoute
   AllocationRoute: typeof AllocationRoute
@@ -323,8 +373,10 @@ export interface RootRouteChildren {
   MeetingsRoute: typeof MeetingsRoute
   MutualFundsRoute: typeof MutualFundsRoute
   PmsRoute: typeof PmsRoute
+  RebalancingRoute: typeof RebalancingRoute
   ReportsRoute: typeof ReportsRoute
   SettingsRoute: typeof SettingsRoute
+  SimulatorRoute: typeof SimulatorRoute
   TransactionsRoute: typeof TransactionsRoute
   UlipsRoute: typeof UlipsRoute
 }
@@ -345,6 +397,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TransactionsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/simulator': {
+      id: '/simulator'
+      path: '/simulator'
+      fullPath: '/simulator'
+      preLoaderRoute: typeof SimulatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -357,6 +416,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/reports'
       preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rebalancing': {
+      id: '/rebalancing'
+      path: '/rebalancing'
+      fullPath: '/rebalancing'
+      preLoaderRoute: typeof RebalancingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pms': {
@@ -485,6 +551,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdvisorReviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/add-transaction': {
+      id: '/add-transaction'
+      path: '/add-transaction'
+      fullPath: '/add-transaction'
+      preLoaderRoute: typeof AddTransactionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -497,6 +577,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AddTransactionRoute: AddTransactionRoute,
+  AdminRoute: AdminRoute,
   AdvisorReviewRoute: AdvisorReviewRoute,
   AifsRoute: AifsRoute,
   AllocationRoute: AllocationRoute,
@@ -515,8 +597,10 @@ const rootRouteChildren: RootRouteChildren = {
   MeetingsRoute: MeetingsRoute,
   MutualFundsRoute: MutualFundsRoute,
   PmsRoute: PmsRoute,
+  RebalancingRoute: RebalancingRoute,
   ReportsRoute: ReportsRoute,
   SettingsRoute: SettingsRoute,
+  SimulatorRoute: SimulatorRoute,
   TransactionsRoute: TransactionsRoute,
   UlipsRoute: UlipsRoute,
 }

@@ -3,7 +3,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { fetchBook, fetchTransactions } from "@/lib/data-service";
+import { fetchBook, fetchTransactions, fetchHistory } from "@/lib/data-service";
 import { useUnits } from "@/lib/units";
 import type { PortfolioHolding } from "@/lib/types";
 import {
@@ -163,4 +163,14 @@ export function useRealisedGains() {
     ledger: q.data?.realisedLedger ?? null,
     purchases: q.data?.purchases ?? [],
   };
+}
+
+/** Dated snapshots from Supabase — the only source of trend in the app. */
+export function useHistory() {
+  return useQuery({
+    queryKey: ["portfolioHistory"],
+    queryFn: fetchHistory,
+    staleTime: 10 * 60 * 1000,
+    retry: 1,
+  });
 }
