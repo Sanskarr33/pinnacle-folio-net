@@ -2,9 +2,17 @@
 // what it needs, so no two panels can show figures from different fetches.
 
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { fetchBook, fetchTransactions, fetchHistory } from "@/lib/data-service";
 import { useUnits } from "@/lib/units";
+import {
+  applyPrices,
+  subscribePrices,
+  getPriceSnapshot,
+  getServerPriceSnapshot,
+  type PriceCoverage,
+  type PriceSnapshot,
+} from "@/lib/prices";
 import type { PortfolioHolding } from "@/lib/types";
 import {
   totals,
@@ -26,13 +34,30 @@ import {
 
 const BOOK_KEY = ["book"] as const;
 
+/**
+ * The single source every view derives from. Live NAVs (when a refresh has run)
+ * are overlaid here, so the whole dashboard moves together — no panel can show a
+ * pre-refresh figure while another shows a post-refresh one.
+ */
 export function useBook() {
-  return useQuery({
+  const q = useQuery({
     queryKey: BOOK_KEY,
     queryFn: fetchBook,
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });
+  const prices = useSyncExternalStore(subscribePrices, getPriceSnapshot, getServerPriceSnapshot);
+  const { rows, coverage } = useMemo(() => applyPrices(q.data ?? [], prices), [q.data, prices]);
+  return { ...q, data: q.data ? rows : q.data, priceCoverage: coverage, prices };
+}
+
+/** Just the live-price state, for the header control. Does not re-fetch the book. */
+export function usePriceState(): {
+  prices: PriceSnapshot | null;
+  coverage: PriceCoverage | null;
+} {
+  const { prices, priceCoverage } = useBook();
+  return { prices, coverage: priceCoverage };
 }
 
 /** The book filtered to one product page, plus the loading/error passthrough. */

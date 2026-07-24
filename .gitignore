@@ -47,3 +47,8 @@ scripts/out/
 .env
 .env.*
 !.env.example
+
+# Python
+scripts/__pycache__/
+__pycache__/
+*.pyc

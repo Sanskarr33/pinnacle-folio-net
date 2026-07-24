@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Moon, Sun, RefreshCw, CalendarClock } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { Moon, Sun, CalendarClock } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { useBook, useTotals, useAlerts } from "@/hooks/use-book";
+import { useTotals, useAlerts } from "@/hooks/use-book";
 import { useTheme } from "@/hooks/use-theme";
 import { pctSigned, formatDate } from "@/lib/format";
 import { GlobalSearch } from "@/components/common/GlobalSearch";
 import { UnitSelector } from "@/components/common/UnitSelector";
+import { PriceRefresh } from "@/components/common/PriceRefresh";
 import { cn } from "@/lib/utils";
 import { useUnits } from "@/lib/units";
 
@@ -20,9 +20,7 @@ export function TopHeader() {
   const { money } = useUnits();
   const { totals } = useTotals();
   const { alerts } = useAlerts();
-  const { isFetching } = useBook();
   const { toggle } = useTheme();
-  const qc = useQueryClient();
   const [searchOpen, setSearchOpen] = useState(false);
 
   const highs = alerts.filter((a) => a.severity === "high").length;
@@ -61,17 +59,7 @@ export function TopHeader() {
 
           <UnitSelector compact />
 
-          <button
-            onClick={() => qc.invalidateQueries({ queryKey: ["book"] })}
-            disabled={isFetching}
-            title="Refresh portfolio data"
-            aria-label="Refresh portfolio data"
-            className="h-9 w-9 rounded-full hover:bg-secondary flex items-center justify-center transition-colors disabled:opacity-50"
-          >
-            <RefreshCw
-              className={cn("h-4 w-4 text-muted-foreground", isFetching && "animate-spin")}
-            />
-          </button>
+          <PriceRefresh />
 
           <button
             onClick={toggle}

@@ -674,6 +674,78 @@ class Importer:
 
         return "\n".join(out), ok
 
+    # ─── NAV / ISIN enrichment ───────────────────────────────────────────────
+    # The workbook ships the AMFI "NAVAll" dump (Scheme Code | ISIN Growth |
+    # ISIN Reinvest | Scheme Name | NAV | Date). Matching each fund holding to it
+    # once, here, attaches a real ISIN — which turns the runtime price refresh from
+    # fuzzy name-matching into an exact key lookup against the live AMFI feed.
+
+    @staticmethod
+    def _nav_tokens(name: str) -> tuple[list[str], str]:
+        """Normalised token list + plan flag (growth / idcw / other) for a scheme name."""
+        s = (name or "").lower().replace("&", " and ")
+        plan = "growth" if re.search(r"\(g\)|\bgrowth\b", s) else (
+            "idcw" if re.search(r"\(idcw\)|\bidcw\b|\bdividend\b|\bdiv\b|reinvest|payout", s) else "other"
+        )
+        s = re.sub(r"[^a-z0-9 ]", " ", s)
+        stop = {"fund", "scheme", "plan", "option", "the", "of", "growth", "idcw",
+                "dividend", "div", "reinvestment", "reinvest", "payout", "an", "a"}
+        sub = {"dir": "direct", "reg": "regular", "opp": "opportunities", "opps": "opportunities",
+               "mgmt": "management", "corp": "corporate", "intl": "international", "govt": "government",
+               "sec": "securities", "eq": "equity", "mfg": "manufacturing"}
+        toks = [sub.get(t, t) for t in s.split() if t and t not in stop]
+        return toks, plan
+
+    def enrich_isins(self):
+        ws = self.wb["NAVAll"]
+        catalogue: list[tuple[set, str, str, float]] = []  # (tokens, plan, isin_growth, nav)
+        for row in ws.iter_rows(values_only=True):
+            code, isin_g, _isin_r, sname, nav, _date = (list(row) + [None] * 6)[:6]
+            if not sname or not isin_g or not str(isin_g).startswith("IN"):
+                continue
+            toks, plan = self._nav_tokens(str(sname))
+            if toks:
+                catalogue.append((set(toks), plan, str(isin_g).strip(), num(nav)))
+
+        matched = unmatched = 0
+        matched_value = 0.0
+        misses: list[str] = []
+        for h in self.rows:
+            pt = (h.product_type or "").lower()
+            is_fund = "mutual fund" in pt or pt == "etf" or "etf" in pt
+            if not is_fund or not h.security_name:
+                continue
+            toks, plan = self._nav_tokens(h.security_name)
+            tset = set(toks)
+            if not tset:
+                continue
+            best, best_score = None, 0.0
+            for c_toks, c_plan, c_isin, _nav in catalogue:
+                inter = len(tset & c_toks)
+                if inter < 2:
+                    continue
+                score = inter / len(tset | c_toks)
+                if c_plan == plan:
+                    score += 0.15   # reward same plan (growth vs idcw)
+                if score > best_score:
+                    best, best_score = c_isin, score
+            # Conservative threshold: a wrong ISIN is worse than no ISIN.
+            if best and best_score >= 0.55:
+                h.isin = best
+                matched += 1
+                matched_value += h.current_value or 0
+            else:
+                unmatched += 1
+                if h.current_value and (h.current_value or 0) > 1_000_000:
+                    misses.append(f"{h.security_name} ({(h.current_value or 0)/CR:.2f} Cr)")
+
+        self.warnings.append(
+            f"ISIN enrichment: {matched} fund lots matched ({matched_value/CR:.2f} Cr), "
+            f"{unmatched} unmatched"
+        )
+        for m in sorted(set(misses))[:12]:
+            self.warnings.append(f"  unmatched fund: {m}")
+
     def run(self):
         self.equity_mf()
         self.debt_mf()
@@ -681,6 +753,7 @@ class Importer:
         self.etfs()
         self.bullion_and_bonds()
         self.summary_positions()
+        self.enrich_isins()
         # allocation_percent is derived once the whole book is known
         total = sum(h.current_value or 0 for h in self.rows) or 1
         for h in self.rows:

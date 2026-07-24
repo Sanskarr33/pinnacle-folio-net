@@ -3,8 +3,9 @@
 
         1. Detects whether any workbook in .\excel changed since the last run
         2. Re-imports the Excel book into src\data\holdings-snapshot.json
-        3. Pushes the snapshot to Supabase (skipped if no service key is available)
-        4. Appends a one-line result to scripts\out\sync.log
+        3. Bakes the latest AMFI mutual-fund NAVs into the snapshot (non-fatal if offline)
+        4. Pushes the snapshot to Supabase (skipped if no service key is available)
+        5. Appends a one-line result to scripts\out\sync.log
 
     Manual run:
         powershell -ExecutionPolicy Bypass -File scripts\daily_sync.ps1
@@ -89,9 +90,11 @@ $fingerprint = ($books | Sort-Object Name | ForEach-Object {
 
 $previous = if (Test-Path $StampFile) { Get-Content $StampFile -Raw } else { "" }
 
-if (-not $Force -and $fingerprint.Trim() -eq $previous.Trim()) {
-    Write-Log "INFO" "Workbooks unchanged since last run - nothing to do. (use -Force to override)"
-    exit 0
+# An unchanged workbook skips the *re-import* only. NAVs still publish daily, so the
+# NAV bake-in and Supabase push run every day regardless.
+$reimport = $Force -or ($fingerprint.Trim() -ne $previous.Trim())
+if (-not $reimport) {
+    Write-Log "INFO" "Workbooks unchanged - skipping re-import; refreshing NAVs only. (use -Force to re-import)"
 }
 
 foreach ($b in $books) {
@@ -99,26 +102,42 @@ foreach ($b in $books) {
 }
 
 # 1. Import ---------------------------------------------------------------------
-Write-Log "INFO" "Importing workbook -> src\data\holdings-snapshot.json"
-& $python (Join-Path $Root "scripts\import_excel.py") 2>&1 | ForEach-Object { Write-Host "    $_" }
-if ($LASTEXITCODE -ne 0) {
-    Write-Log "ERROR" "import_excel.py failed (exit $LASTEXITCODE). Snapshot NOT updated."
-    exit 3
-}
+if ($reimport) {
+    Write-Log "INFO" "Importing workbook -> src\data\holdings-snapshot.json"
+    & $python (Join-Path $Root "scripts\import_excel.py") 2>&1 | ForEach-Object { Write-Host "    $_" }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Log "ERROR" "import_excel.py failed (exit $LASTEXITCODE). Snapshot NOT updated."
+        exit 3
+    }
 
-# Surface the headline figures into the log so the log alone tells the story.
-$snapPath = Join-Path $Root "src\data\holdings-snapshot.json"
-if (Test-Path $snapPath) {
-    try {
-        $snap = Get-Content $snapPath -Raw | ConvertFrom-Json
-        $cr = [math]::Round($snap.totalValue / 10000000, 2)
-        Write-Log "INFO" ("Imported {0} rows, as on {1}, value Rs {2} Cr" -f $snap.rowCount, $snap.asOnDate, $cr)
-    } catch {
-        Write-Log "WARN" "Could not read back the snapshot for logging: $($_.Exception.Message)"
+    # Surface the headline figures into the log so the log alone tells the story.
+    $snapPath = Join-Path $Root "src\data\holdings-snapshot.json"
+    if (Test-Path $snapPath) {
+        try {
+            $snap = Get-Content $snapPath -Raw | ConvertFrom-Json
+            $cr = [math]::Round($snap.totalValue / 10000000, 2)
+            Write-Log "INFO" ("Imported {0} rows, as on {1}, value Rs {2} Cr" -f $snap.rowCount, $snap.asOnDate, $cr)
+        } catch {
+            Write-Log "WARN" "Could not read back the snapshot for logging: $($_.Exception.Message)"
+        }
     }
 }
 
-# 2. Push to Supabase -----------------------------------------------------------
+# 2. Bake in live NAVs ----------------------------------------------------------
+# Overlay the latest AMFI mutual-fund NAVs onto the freshly-imported snapshot so the
+# dashboard loads current values by default. A missing feed is non-fatal: the workbook
+# valuations already in the snapshot stand.
+Write-Log "INFO" "Refreshing mutual-fund NAVs from AMFI"
+& $python (Join-Path $Root "scripts\refresh_navs.py") 2>&1 | ForEach-Object { Write-Host "    $_" }
+if ($LASTEXITCODE -eq 3) {
+    Write-Log "WARN" "AMFI feed unavailable - snapshot keeps workbook NAVs."
+} elseif ($LASTEXITCODE -ne 0) {
+    Write-Log "WARN" "refresh_navs.py exited $LASTEXITCODE - snapshot keeps workbook NAVs."
+} else {
+    Write-Log "INFO" "Live NAVs baked into snapshot"
+}
+
+# 3. Push to Supabase -----------------------------------------------------------
 if ($SkipSupabase) {
     Write-Log "INFO" "-SkipSupabase set - database not updated."
 } else {
