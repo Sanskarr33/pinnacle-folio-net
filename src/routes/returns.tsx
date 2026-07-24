@@ -19,13 +19,7 @@ import { normaliseEntity } from "@/lib/portfolio-analytics";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Card } from "@/components/dashboard/Card";
 import { ErrorState, Skeleton } from "@/components/common/States";
-import {
-  xirrForRows,
-  xirrByGroup,
-  deploymentByMonth,
-  entityKey,
-  vintageKey,
-} from "@/lib/xirr";
+import { xirrForRows, xirrByGroup, deploymentByMonth, entityKey, vintageKey } from "@/lib/xirr";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/returns")({
