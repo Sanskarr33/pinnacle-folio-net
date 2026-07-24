@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import {
   useBook,
   useTotals,
@@ -22,7 +22,8 @@ import { inr, pct, pctSigned, formatDate } from "@/lib/format";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Card } from "@/components/dashboard/Card";
 import { ErrorState, Skeleton } from "@/components/common/States";
-import { Download, Printer, FileSpreadsheet } from "lucide-react";
+import { ReportDocument } from "@/components/reports/ReportDocument";
+import { Download, Printer, FileSpreadsheet, FileText, X } from "lucide-react";
 import type { Slice } from "@/lib/types";
 
 export const Route = createFileRoute("/reports")({
@@ -37,6 +38,7 @@ export const Route = createFileRoute("/reports")({
 
 function ReportsPage() {
   const { data: book = [], isLoading, error, refetch } = useBook();
+  const [showReport, setShowReport] = useState(false);
   const { totals } = useTotals();
   const { slices: assets } = useAssetAllocation();
   const { slices: entities } = useEntityAllocation();
@@ -205,14 +207,14 @@ function ReportsPage() {
       <PageHeader
         eyebrow="Operations · Reporting"
         title="Reports & Exports"
-        description="A printable position summary and CSV extracts of every derived view."
+        description="A designed, multi-page PDF report — plus CSV extracts of every derived view."
         right={
           <button
-            onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 text-[12px] font-medium px-3 h-9 rounded-md bg-navy text-navy-foreground hover:bg-navy/90 transition-colors print:hidden"
+            onClick={() => setShowReport(true)}
+            className="inline-flex items-center gap-1.5 text-[12px] font-medium px-3.5 h-9 rounded-md bg-navy text-navy-foreground hover:bg-navy/90 transition-colors"
           >
-            <Printer className="h-3.5 w-3.5" />
-            Print / Save PDF
+            <FileText className="h-3.5 w-3.5" />
+            Generate PDF report
           </button>
         }
       />
@@ -224,10 +226,27 @@ function ReportsPage() {
       ) : (
         <>
           <Card
-            title="CSV exports"
-            subtitle="Each reflects the current book exactly"
-            className="print:hidden"
+            title="Portfolio PDF report"
+            subtitle="A presentation-grade document, generated live from the book"
           >
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
+              <p className="text-[12.5px] text-muted-foreground leading-relaxed max-w-xl">
+                A seven-page report — cover, executive summary, allocation detail, largest holdings,
+                risk &amp; policy, tax &amp; liquidity, and advisor governance — with charts and
+                your advisors' policy bands. Opens a preview; use <b>Save as PDF</b> to export a
+                print-quality, vector document.
+              </p>
+              <button
+                onClick={() => setShowReport(true)}
+                className="inline-flex items-center gap-2 text-[13px] font-medium px-4 h-10 rounded-md bg-navy text-navy-foreground hover:bg-navy/90 transition-colors shrink-0"
+              >
+                <FileText className="h-4 w-4" />
+                Generate PDF report
+              </button>
+            </div>
+          </Card>
+
+          <Card title="CSV exports" subtitle="Each reflects the current book exactly">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {exports.map((e) => (
                 <button
@@ -315,6 +334,40 @@ function ReportsPage() {
             </div>
           </Card>
         </>
+      )}
+
+      {showReport && (
+        <div className="fixed inset-0 z-50 bg-[#eef0f4] dark:bg-[#0f1424] overflow-auto">
+          <div className="sticky top-0 z-10 flex items-center justify-between gap-4 px-5 h-14 bg-surface/90 backdrop-blur border-b border-border print:hidden">
+            <div className="flex items-center gap-2 text-[13px] font-semibold">
+              <FileText className="h-4 w-4" />
+              Portfolio report — preview
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="hidden sm:block text-[11px] text-muted-foreground">
+                Use your browser's <b>Save as PDF</b> destination for a vector file
+              </span>
+              <button
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-1.5 text-[12px] font-medium px-3.5 h-9 rounded-md bg-navy text-navy-foreground hover:bg-navy/90 transition-colors"
+              >
+                <Printer className="h-3.5 w-3.5" />
+                Save as PDF
+              </button>
+              <button
+                onClick={() => setShowReport(false)}
+                aria-label="Close preview"
+                className="inline-flex items-center gap-1.5 text-[12px] font-medium px-3 h-9 rounded-md border border-border hover:bg-secondary transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+                Close
+              </button>
+            </div>
+          </div>
+          <div className="py-8">
+            <ReportDocument />
+          </div>
+        </div>
       )}
     </div>
   );
