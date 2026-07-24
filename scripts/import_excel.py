@@ -549,6 +549,11 @@ class Importer:
             "ICICI Pru PIPE PMS": "SG",
             "ICICI Pru PMS Large Cap Strategy": "SG",
             "Carnelian Capital Compounder PMS": "SG",
+            "NSE Unlisted Shares": "SG",
+            "Cash in Hand / Bank": "SG",
+            "Public Provident Fund (PPF)": "SG",
+            "ICICI Prudential ULIP": "SG",
+            "National Pension Scheme (NPS)": "SG",
         }
 
         for frag, name, asset_class, product, category, note in specs:
