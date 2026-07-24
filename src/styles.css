@@ -109,6 +109,15 @@
   --chart-4: oklch(0.55 0.18 25);    /* terracotta */
   --chart-5: oklch(0.50 0.12 295);   /* deep violet */
 
+  /* Categorical series that must stay legible on BOTH the light and the dark
+     surface — the same value is used in either mode. These are lighter steps of
+     chart-1/2/5: the base navy sits at L 0.455 and drops to 2.59:1 contrast on the
+     dark surface, which fails. Validated (lightness band, chroma floor, adjacent
+     CVD separation, normal-vision floor, contrast) against both surfaces. */
+  --series-1: oklch(0.62 0.13 245);  /* navy   #348dcf */
+  --series-2: oklch(0.62 0.14 155);  /* emerald #269e5f */
+  --series-3: oklch(0.64 0.13 295);  /* violet #927ad2 */
+
   /* Sidebar - deep navy */
   --sidebar: oklch(0.18 0.045 260);
   --sidebar-foreground: oklch(0.88 0.015 250);

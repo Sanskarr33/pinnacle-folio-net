@@ -28,6 +28,7 @@ import { Route as EquityRouteImport } from './routes/equity'
 import { Route as EntitiesRouteImport } from './routes/entities'
 import { Route as DataImportRouteImport } from './routes/data-import'
 import { Route as CapitalGainsRouteImport } from './routes/capital-gains'
+import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as BullionRouteImport } from './routes/bullion'
 import { Route as BondsFdsRouteImport } from './routes/bonds-fds'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
@@ -133,6 +134,11 @@ const CapitalGainsRoute = CapitalGainsRouteImport.update({
   path: '/capital-gains',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CalendarRoute = CalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BullionRoute = BullionRouteImport.update({
   id: '/bullion',
   path: '/bullion',
@@ -189,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AnalyticsRoute
   '/bonds-fds': typeof BondsFdsRoute
   '/bullion': typeof BullionRoute
+  '/calendar': typeof CalendarRoute
   '/capital-gains': typeof CapitalGainsRoute
   '/data-import': typeof DataImportRoute
   '/entities': typeof EntitiesRoute
@@ -219,6 +226,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AnalyticsRoute
   '/bonds-fds': typeof BondsFdsRoute
   '/bullion': typeof BullionRoute
+  '/calendar': typeof CalendarRoute
   '/capital-gains': typeof CapitalGainsRoute
   '/data-import': typeof DataImportRoute
   '/entities': typeof EntitiesRoute
@@ -250,6 +258,7 @@ export interface FileRoutesById {
   '/analytics': typeof AnalyticsRoute
   '/bonds-fds': typeof BondsFdsRoute
   '/bullion': typeof BullionRoute
+  '/calendar': typeof CalendarRoute
   '/capital-gains': typeof CapitalGainsRoute
   '/data-import': typeof DataImportRoute
   '/entities': typeof EntitiesRoute
@@ -282,6 +291,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/bonds-fds'
     | '/bullion'
+    | '/calendar'
     | '/capital-gains'
     | '/data-import'
     | '/entities'
@@ -312,6 +322,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/bonds-fds'
     | '/bullion'
+    | '/calendar'
     | '/capital-gains'
     | '/data-import'
     | '/entities'
@@ -342,6 +353,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/bonds-fds'
     | '/bullion'
+    | '/calendar'
     | '/capital-gains'
     | '/data-import'
     | '/entities'
@@ -373,6 +385,7 @@ export interface RootRouteChildren {
   AnalyticsRoute: typeof AnalyticsRoute
   BondsFdsRoute: typeof BondsFdsRoute
   BullionRoute: typeof BullionRoute
+  CalendarRoute: typeof CalendarRoute
   CapitalGainsRoute: typeof CapitalGainsRoute
   DataImportRoute: typeof DataImportRoute
   EntitiesRoute: typeof EntitiesRoute
@@ -529,6 +542,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CapitalGainsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/calendar': {
+      id: '/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof CalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/bullion': {
       id: '/bullion'
       path: '/bullion'
@@ -605,6 +625,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsRoute: AnalyticsRoute,
   BondsFdsRoute: BondsFdsRoute,
   BullionRoute: BullionRoute,
+  CalendarRoute: CalendarRoute,
   CapitalGainsRoute: CapitalGainsRoute,
   DataImportRoute: DataImportRoute,
   EntitiesRoute: EntitiesRoute,

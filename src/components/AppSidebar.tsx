@@ -26,6 +26,7 @@ import {
   Settings,
   Globe2,
   Table2,
+  CalendarClock,
 } from "lucide-react";
 import {
   Sidebar,
@@ -74,6 +75,7 @@ const ops: Item[] = [
   { title: "Add Transaction", url: "/add-transaction", icon: PlusCircle },
   { title: "Capital Gains", url: "/capital-gains", icon: Receipt },
   { title: "Exit Load Tracker", url: "/exit-load", icon: Timer },
+  { title: "Liquidity Calendar", url: "/calendar", icon: CalendarClock },
   { title: "Advisor Meetings", url: "/meetings", icon: NotebookPen },
   { title: "Custodian Review", url: "/advisor-review", icon: ClipboardCheck },
   { title: "Reports", url: "/reports", icon: FileBarChart },
