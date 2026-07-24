@@ -140,7 +140,7 @@ function DataEntryPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="px-4 sm:px-6 py-6 max-w-[1600px] mx-auto animate-in fade-in duration-500 space-y-6">
       <PageHeader
         eyebrow="Operations"
         title="Data Entry"

@@ -172,7 +172,7 @@ function ReturnsPage() {
   const filtersActive = offEntities.size > 0 || vintage !== null;
 
   return (
-    <div className="space-y-6">
+    <div className="px-4 sm:px-6 py-6 max-w-[1600px] mx-auto animate-in fade-in duration-500 space-y-6">
       <PageHeader
         eyebrow="Performance"
         title="Money-Weighted Returns"
@@ -193,13 +193,13 @@ function ReturnsPage() {
       ) : (
         <>
           {/* ── Live headline ────────────────────────────────────────────────── */}
-          <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/8 to-transparent px-6 py-6">
-            <div className="flex flex-wrap items-end justify-between gap-6">
+          <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/8 to-transparent px-5 sm:px-6 py-6">
+            <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-5">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-medium">
                   Portfolio XIRR {filtersActive && "· filtered"}
                 </p>
-                <p className="text-[52px] leading-none font-semibold tabular mt-2 text-foreground">
+                <p className="text-[42px] sm:text-[52px] leading-none font-semibold tabular mt-2 text-foreground">
                   {result.rate != null ? `${(result.rate * 100).toFixed(2)}%` : "—"}
                 </p>
                 <p className="text-[12px] text-muted-foreground mt-2">
@@ -207,7 +207,7 @@ function ReturnsPage() {
                   {money(result.investedCovered)} → {money(result.terminalCovered)}
                 </p>
               </div>
-              <div className="flex gap-6">
+              <div className="flex flex-wrap gap-x-6 gap-y-3">
                 <HeadStat
                   label="Total return"
                   value={pctSigned(result.totalReturnPct, 1)}

@@ -150,7 +150,10 @@ function AppShell() {
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
         <AppSidebar />
-        <div className="flex-1 flex flex-col min-w-0">
+        {/* min-w-0 lets this column shrink below its content's intrinsic width, and
+            overflow-x-clip stops any single wide child (a table, a long number) from
+            forcing the whole page to scroll sideways on a phone. */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-x-clip">
           <TopHeader />
           <main className="flex-1 min-w-0">
             <Outlet />
