@@ -1,6 +1,8 @@
 import type { PortfolioHolding } from "@/lib/types";
 import type { Override } from "@/lib/overrides";
 import { clearOverride } from "@/lib/overrides";
+import { tombstoneRow, removeManualHolding, isManual } from "@/lib/manual-entries";
+import { toast } from "sonner";
 import {
   displayName,
   normaliseEntity,
@@ -23,6 +25,7 @@ import {
   RotateCcw,
   TrendingUp,
   TrendingDown,
+  Trash2,
 } from "lucide-react";
 import { useUnits } from "@/lib/units";
 
@@ -184,15 +187,36 @@ export function RowDetail({
 
       {/* Provenance + corrections */}
       <div className="mt-4 pt-3 border-t border-border flex flex-wrap items-start justify-between gap-4">
-        <p className="text-[10.5px] text-muted-foreground inline-flex items-center gap-1.5">
-          <FileText className="h-3 w-3 shrink-0" />
-          <span>
-            Source: <code className="bg-secondary px-1 rounded">{row.source_sheet ?? "—"}</code>
-            {row.source_row != null && <> row {row.source_row}</>}
-            {row.report_section && <> · {row.report_section}</>}
-            {row.as_on_date && <> · valued {formatDate(row.as_on_date)}</>}
-          </span>
-        </p>
+        <div className="flex items-center gap-3 flex-wrap">
+          <p className="text-[10.5px] text-muted-foreground inline-flex items-center gap-1.5">
+            <FileText className="h-3 w-3 shrink-0" />
+            <span>
+              Source: <code className="bg-secondary px-1 rounded">{row.source_sheet ?? "—"}</code>
+              {row.source_row != null && <> row {row.source_row}</>}
+              {row.report_section && <> · {row.report_section}</>}
+              {row.as_on_date && <> · valued {formatDate(row.as_on_date)}</>}
+            </span>
+          </p>
+          <button
+            onClick={() => {
+              const name = displayName(row);
+              if (isManual(row)) {
+                removeManualHolding(row.id);
+                toast.message(`Removed “${name}”.`);
+              } else {
+                tombstoneRow(row, "removed from grid");
+                toast.message(`Removed “${name}” from the book.`, {
+                  description: "Restore it any time from Data Entry.",
+                });
+              }
+            }}
+            className="inline-flex items-center gap-1 text-[10.5px] text-muted-foreground hover:text-destructive transition-colors"
+            title="Remove this holding from the book (revertible on the Data Entry page)"
+          >
+            <Trash2 className="h-3 w-3" />
+            Remove from book
+          </button>
+        </div>
 
         {editList.length > 0 && (
           <div className="text-[10.5px]">

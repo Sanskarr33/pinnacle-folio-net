@@ -28,6 +28,7 @@ import {
   Table2,
   CalendarClock,
   Target,
+  SquarePen,
 } from "lucide-react";
 import {
   Sidebar,
@@ -73,6 +74,7 @@ const products: Item[] = [
 ];
 
 const ops: Item[] = [
+  { title: "Data Entry", url: "/data-entry", icon: SquarePen },
   { title: "Acquisitions", url: "/transactions", icon: ArrowLeftRight },
   { title: "Add Transaction", url: "/add-transaction", icon: PlusCircle },
   { title: "Capital Gains", url: "/capital-gains", icon: Receipt },

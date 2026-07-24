@@ -13,6 +13,20 @@ import {
   type PriceCoverage,
   type PriceSnapshot,
 } from "@/lib/prices";
+import {
+  subscribe as subscribeOverrides,
+  getSnapshot as getOverrideSnapshot,
+  getServerSnapshot as getServerOverrideSnapshot,
+  applyOverrides,
+  overrideCount,
+} from "@/lib/overrides";
+import {
+  subscribeManual,
+  getManualSnapshot,
+  getServerManualSnapshot,
+  applyManualLayer,
+  type ManualStats,
+} from "@/lib/manual-entries";
 import type { PortfolioHolding } from "@/lib/types";
 import {
   totals,
@@ -35,9 +49,15 @@ import {
 const BOOK_KEY = ["book"] as const;
 
 /**
- * The single source every view derives from. Live NAVs (when a refresh has run)
- * are overlaid here, so the whole dashboard moves together — no panel can show a
- * pre-refresh figure while another shows a post-refresh one.
+ * The single source every view derives from. Three user layers are applied here, in
+ * order, so the WHOLE dashboard moves together — totals, allocation, pivot, benchmark,
+ * every grid — rather than an edit showing in one table and nowhere else:
+ *
+ *   1. overrides      — corrections to workbook rows (from overrides.ts)
+ *   2. manual layer   — user-added holdings and removals (from manual-entries.ts)
+ *   3. live NAVs      — the price overlay (from prices.ts)
+ *
+ * Allocation % is re-derived after the edits so shares stay internally consistent.
  */
 export function useBook() {
   const q = useQuery({
@@ -46,9 +66,40 @@ export function useBook() {
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });
+  const overrides = useSyncExternalStore(
+    subscribeOverrides,
+    getOverrideSnapshot,
+    getServerOverrideSnapshot,
+  );
+  const manual = useSyncExternalStore(subscribeManual, getManualSnapshot, getServerManualSnapshot);
   const prices = useSyncExternalStore(subscribePrices, getPriceSnapshot, getServerPriceSnapshot);
-  const { rows, coverage } = useMemo(() => applyPrices(q.data ?? [], prices), [q.data, prices]);
-  return { ...q, data: q.data ? rows : q.data, priceCoverage: coverage, prices };
+
+  const { edited, manualStats } = useMemo(() => {
+    const base = q.data ?? [];
+    // 1. corrections to existing rows
+    const corrected =
+      overrideCount(overrides) > 0 ? base.map((r) => applyOverrides(r, overrides)) : base;
+    // 2. additions & removals, with allocation re-derived over the merged book
+    const { rows, stats } = applyManualLayer(corrected, manual);
+    return { edited: rows, manualStats: stats };
+  }, [q.data, overrides, manual]);
+
+  // 3. live NAV overlay (also re-derives allocation when it changes anything)
+  const { rows, coverage } = useMemo(() => applyPrices(edited, prices), [edited, prices]);
+
+  return {
+    ...q,
+    data: q.data ? rows : q.data,
+    priceCoverage: coverage,
+    prices,
+    manualStats,
+  };
+}
+
+/** Manual-layer stats (adds/removals), for the management page and badges. */
+export function useManualStats(): ManualStats {
+  const { manualStats } = useBook();
+  return manualStats;
 }
 
 /** Just the live-price state, for the header control. Does not re-fetch the book. */
