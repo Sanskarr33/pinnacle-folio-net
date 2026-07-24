@@ -29,6 +29,7 @@ import {
   CalendarClock,
   Target,
   SquarePen,
+  Gauge,
 } from "lucide-react";
 import {
   Sidebar,
@@ -57,6 +58,7 @@ const overview: Item[] = [
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
   { title: "Pivot", url: "/pivot", icon: Table2 },
   { title: "Benchmark", url: "/benchmark", icon: Target },
+  { title: "Returns (XIRR)", url: "/returns", icon: Gauge },
   { title: "Rebalancing", url: "/rebalancing", icon: Scale },
   { title: "Simulator", url: "/simulator", icon: FlaskConical },
 ];

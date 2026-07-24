@@ -13,6 +13,7 @@ import { Route as UlipsRouteImport } from './routes/ulips'
 import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as SimulatorRouteImport } from './routes/simulator'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ReturnsRouteImport } from './routes/returns'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as RebalancingRouteImport } from './routes/rebalancing'
 import { Route as PmsRouteImport } from './routes/pms'
@@ -59,6 +60,11 @@ const SimulatorRoute = SimulatorRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReturnsRoute = ReturnsRouteImport.update({
+  id: '/returns',
+  path: '/returns',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportsRoute = ReportsRouteImport.update({
@@ -225,6 +231,7 @@ export interface FileRoutesByFullPath {
   '/pms': typeof PmsRoute
   '/rebalancing': typeof RebalancingRoute
   '/reports': typeof ReportsRoute
+  '/returns': typeof ReturnsRoute
   '/settings': typeof SettingsRoute
   '/simulator': typeof SimulatorRoute
   '/transactions': typeof TransactionsRoute
@@ -258,6 +265,7 @@ export interface FileRoutesByTo {
   '/pms': typeof PmsRoute
   '/rebalancing': typeof RebalancingRoute
   '/reports': typeof ReportsRoute
+  '/returns': typeof ReturnsRoute
   '/settings': typeof SettingsRoute
   '/simulator': typeof SimulatorRoute
   '/transactions': typeof TransactionsRoute
@@ -292,6 +300,7 @@ export interface FileRoutesById {
   '/pms': typeof PmsRoute
   '/rebalancing': typeof RebalancingRoute
   '/reports': typeof ReportsRoute
+  '/returns': typeof ReturnsRoute
   '/settings': typeof SettingsRoute
   '/simulator': typeof SimulatorRoute
   '/transactions': typeof TransactionsRoute
@@ -327,6 +336,7 @@ export interface FileRouteTypes {
     | '/pms'
     | '/rebalancing'
     | '/reports'
+    | '/returns'
     | '/settings'
     | '/simulator'
     | '/transactions'
@@ -360,6 +370,7 @@ export interface FileRouteTypes {
     | '/pms'
     | '/rebalancing'
     | '/reports'
+    | '/returns'
     | '/settings'
     | '/simulator'
     | '/transactions'
@@ -393,6 +404,7 @@ export interface FileRouteTypes {
     | '/pms'
     | '/rebalancing'
     | '/reports'
+    | '/returns'
     | '/settings'
     | '/simulator'
     | '/transactions'
@@ -427,6 +439,7 @@ export interface RootRouteChildren {
   PmsRoute: typeof PmsRoute
   RebalancingRoute: typeof RebalancingRoute
   ReportsRoute: typeof ReportsRoute
+  ReturnsRoute: typeof ReturnsRoute
   SettingsRoute: typeof SettingsRoute
   SimulatorRoute: typeof SimulatorRoute
   TransactionsRoute: typeof TransactionsRoute
@@ -461,6 +474,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/returns': {
+      id: '/returns'
+      path: '/returns'
+      fullPath: '/returns'
+      preLoaderRoute: typeof ReturnsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reports': {
@@ -683,6 +703,7 @@ const rootRouteChildren: RootRouteChildren = {
   PmsRoute: PmsRoute,
   RebalancingRoute: RebalancingRoute,
   ReportsRoute: ReportsRoute,
+  ReturnsRoute: ReturnsRoute,
   SettingsRoute: SettingsRoute,
   SimulatorRoute: SimulatorRoute,
   TransactionsRoute: TransactionsRoute,
