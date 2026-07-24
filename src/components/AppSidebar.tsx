@@ -27,6 +27,7 @@ import {
   Globe2,
   Table2,
   CalendarClock,
+  Target,
 } from "lucide-react";
 import {
   Sidebar,
@@ -54,6 +55,7 @@ const overview: Item[] = [
   { title: "Asset Allocation", url: "/allocation", icon: PieChart },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
   { title: "Pivot", url: "/pivot", icon: Table2 },
+  { title: "Benchmark", url: "/benchmark", icon: Target },
   { title: "Rebalancing", url: "/rebalancing", icon: Scale },
   { title: "Simulator", url: "/simulator", icon: FlaskConical },
 ];

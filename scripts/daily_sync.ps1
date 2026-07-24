@@ -137,6 +137,19 @@ if ($LASTEXITCODE -eq 3) {
     Write-Log "INFO" "Live NAVs baked into snapshot"
 }
 
+# 2b. Refresh index history -----------------------------------------------------
+# Tops up src\data\index-history.json (NIFTY 50, Sensex) for the benchmark page.
+# Independent of the workbook, so it runs on unchanged days too. Non-fatal.
+Write-Log "INFO" "Refreshing index history (NIFTY 50, Sensex)"
+& $python (Join-Path $Root "scripts\refresh_index.py") 2>&1 | ForEach-Object { Write-Host "    $_" }
+if ($LASTEXITCODE -eq 3) {
+    Write-Log "WARN" "Index feed unavailable - benchmark keeps existing history."
+} elseif ($LASTEXITCODE -ne 0) {
+    Write-Log "WARN" "refresh_index.py exited $LASTEXITCODE - benchmark keeps existing history."
+} else {
+    Write-Log "INFO" "Index history refreshed"
+}
+
 # 3. Push to Supabase -----------------------------------------------------------
 if ($SkipSupabase) {
     Write-Log "INFO" "-SkipSupabase set - database not updated."

@@ -31,6 +31,7 @@ import { Route as CapitalGainsRouteImport } from './routes/capital-gains'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as BullionRouteImport } from './routes/bullion'
 import { Route as BondsFdsRouteImport } from './routes/bonds-fds'
+import { Route as BenchmarkRouteImport } from './routes/benchmark'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AllocationRouteImport } from './routes/allocation'
 import { Route as AifsRouteImport } from './routes/aifs'
@@ -149,6 +150,11 @@ const BondsFdsRoute = BondsFdsRouteImport.update({
   path: '/bonds-fds',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BenchmarkRoute = BenchmarkRouteImport.update({
+  id: '/benchmark',
+  path: '/benchmark',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AnalyticsRoute = AnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -193,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/aifs': typeof AifsRoute
   '/allocation': typeof AllocationRoute
   '/analytics': typeof AnalyticsRoute
+  '/benchmark': typeof BenchmarkRoute
   '/bonds-fds': typeof BondsFdsRoute
   '/bullion': typeof BullionRoute
   '/calendar': typeof CalendarRoute
@@ -224,6 +231,7 @@ export interface FileRoutesByTo {
   '/aifs': typeof AifsRoute
   '/allocation': typeof AllocationRoute
   '/analytics': typeof AnalyticsRoute
+  '/benchmark': typeof BenchmarkRoute
   '/bonds-fds': typeof BondsFdsRoute
   '/bullion': typeof BullionRoute
   '/calendar': typeof CalendarRoute
@@ -256,6 +264,7 @@ export interface FileRoutesById {
   '/aifs': typeof AifsRoute
   '/allocation': typeof AllocationRoute
   '/analytics': typeof AnalyticsRoute
+  '/benchmark': typeof BenchmarkRoute
   '/bonds-fds': typeof BondsFdsRoute
   '/bullion': typeof BullionRoute
   '/calendar': typeof CalendarRoute
@@ -289,6 +298,7 @@ export interface FileRouteTypes {
     | '/aifs'
     | '/allocation'
     | '/analytics'
+    | '/benchmark'
     | '/bonds-fds'
     | '/bullion'
     | '/calendar'
@@ -320,6 +330,7 @@ export interface FileRouteTypes {
     | '/aifs'
     | '/allocation'
     | '/analytics'
+    | '/benchmark'
     | '/bonds-fds'
     | '/bullion'
     | '/calendar'
@@ -351,6 +362,7 @@ export interface FileRouteTypes {
     | '/aifs'
     | '/allocation'
     | '/analytics'
+    | '/benchmark'
     | '/bonds-fds'
     | '/bullion'
     | '/calendar'
@@ -383,6 +395,7 @@ export interface RootRouteChildren {
   AifsRoute: typeof AifsRoute
   AllocationRoute: typeof AllocationRoute
   AnalyticsRoute: typeof AnalyticsRoute
+  BenchmarkRoute: typeof BenchmarkRoute
   BondsFdsRoute: typeof BondsFdsRoute
   BullionRoute: typeof BullionRoute
   CalendarRoute: typeof CalendarRoute
@@ -563,6 +576,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BondsFdsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/benchmark': {
+      id: '/benchmark'
+      path: '/benchmark'
+      fullPath: '/benchmark'
+      preLoaderRoute: typeof BenchmarkRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/analytics': {
       id: '/analytics'
       path: '/analytics'
@@ -623,6 +643,7 @@ const rootRouteChildren: RootRouteChildren = {
   AifsRoute: AifsRoute,
   AllocationRoute: AllocationRoute,
   AnalyticsRoute: AnalyticsRoute,
+  BenchmarkRoute: BenchmarkRoute,
   BondsFdsRoute: BondsFdsRoute,
   BullionRoute: BullionRoute,
   CalendarRoute: CalendarRoute,
