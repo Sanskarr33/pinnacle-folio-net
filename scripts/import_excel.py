@@ -535,6 +535,22 @@ class Importer:
             ("Cash in Hnad", "Cash in Hand / Bank", "Cash", "Cash", "Cash", None),
         ]
 
+        # Authoritative owning entity for the summary positions, confirmed by the
+        # family office. The R1 summary sheet gives no per-entity owner, so these
+        # otherwise fall to the "Group" catch-all; anything not listed here stays
+        # "Group" pending confirmation.
+        summary_entity = {
+            "Abakkus All Cap Approach PMS": "SMC",
+            "Nuvama Crossover Opportunities Fund III B": "SG",
+            "ICICI Pru Corporate Credit Opportunities AIF 2": "SSI",
+            "ICICI Pru Corporate Credit Opportunities AIF 3": "SMC",
+            "ICICI Pru OYO AIF-II": "SMC",
+            "ICICI Pru Contra PMS": "SG",
+            "ICICI Pru PIPE PMS": "SG",
+            "ICICI Pru PMS Large Cap Strategy": "SG",
+            "Carnelian Capital Compounder PMS": "SG",
+        }
+
         for frag, name, asset_class, product, category, note in specs:
             i, r = find(frag)
             if r is None:
@@ -548,9 +564,10 @@ class Importer:
                 id=self._id("sum"), as_on_date="", report_section="R1 Summary",
                 source_sheet="R1_Summary", source_row=i + 1,
                 # "Group" is the workbook's own term for a family-level position
-                # (see the entity selector on CapGains FY25-26). These genuinely have
-                # no single owning entity, so we label rather than blank them.
-                entity_name="Group", broker_name=None, folio_number=None,
+                # (see the entity selector on CapGains FY25-26). Where the family
+                # office has confirmed the real owner it is applied via summary_entity;
+                # the rest stay "Group" rather than being blanked.
+                entity_name=summary_entity.get(name, "Group"), broker_name=None, folio_number=None,
                 asset_class=asset_class, category=category,
                 product_type=product, taxation=None,
                 scheme_type=None, fund_type=None,
