@@ -6,6 +6,7 @@ import {
   Search,
   X,
   Download,
+  FileSpreadsheet,
   Columns3,
   ChevronRight,
   Pencil,
@@ -85,6 +86,25 @@ export function rawValue(r: PortfolioHolding, c: GridColumn): string | number | 
   return v == null ? null : (v as string | number);
 }
 
+/** Grid formats collapse to the smaller set the sheet writer understands. */
+function gridFormatToXlsx(f?: GridFormat): "text" | "money" | "number" | "pct" | "date" {
+  switch (f) {
+    case "money":
+    case "moneySigned":
+      return "money";
+    case "pct":
+    case "pctSigned":
+      return "pct";
+    case "number":
+    case "days":
+      return "number";
+    case "date":
+      return "date";
+    default:
+      return "text";
+  }
+}
+
 function isNumericFormat(f?: GridFormat) {
   return (
     f === "money" ||
@@ -143,6 +163,7 @@ export function DataGrid({
   const [entity, setEntity] = useState("All");
   const [page, setPage] = useState(0);
   const [dense, setDense] = useState(initialDense);
+  const [exporting, setExporting] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   /** Which single lot has its full detail panel open (independent of group expansion). */
   const [detailFor, setDetailFor] = useState<string | null>(null);
@@ -332,6 +353,56 @@ export function DataGrid({
     URL.revokeObjectURL(url);
   }
 
+  async function exportExcel() {
+    setExporting(true);
+    try {
+      const { exportXlsx } = await import("@/lib/xlsx-export");
+      // Only the visible columns, in the order shown — the export mirrors the screen.
+      const cols = columns.map((c) => ({
+        header: label(c.label),
+        key: c.key,
+        type: gridFormatToXlsx(c.format),
+        width: c.format === "text" || !c.format ? 34 : 16,
+      }));
+      const data = sorted.map((r) => {
+        const rec: Record<string, unknown> = {};
+        for (const c of columns) rec[c.key] = rawValue(r, c);
+        return rec;
+      });
+      // Totals only for columns the grid itself totals, so the sheet agrees with the UI.
+      const totals: Record<string, unknown> = {};
+      let anyTotal = false;
+      for (const c of columns) {
+        if (!c.total) continue;
+        anyTotal = true;
+        totals[c.key] = sorted.reduce((s, r) => {
+          const v = rawValue(r, c);
+          return s + (typeof v === "number" ? v : 0);
+        }, 0);
+      }
+      if (anyTotal) totals[columns[0].key] = "Total";
+
+      await exportXlsx({
+        fileName: title.toLowerCase().replace(/\s+/g, "-"),
+        unit,
+        subtitle: `${title} · ${sorted.length} rows · SG Family Office`,
+        sheets: [
+          {
+            name: title,
+            columns: cols,
+            rows: data,
+            totals: anyTotal ? totals : undefined,
+            freezeCols: 1,
+          },
+        ],
+      });
+    } catch (err) {
+      console.error("Excel export failed", err);
+    } finally {
+      setExporting(false);
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="rounded-xl border border-border bg-surface shadow-elegant p-3 space-y-1.5">
@@ -456,8 +527,19 @@ export function DataGrid({
           </button>
 
           <button
+            onClick={exportExcel}
+            disabled={sorted.length === 0 || exporting}
+            title="Download as a formatted Excel workbook"
+            className="inline-flex items-center gap-1.5 h-8 rounded-md border border-border px-2 font-medium hover:bg-secondary disabled:opacity-40 transition-colors"
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">{exporting ? "Building…" : "Excel"}</span>
+          </button>
+
+          <button
             onClick={exportCsv}
             disabled={sorted.length === 0}
+            title="Download as raw CSV"
             className="inline-flex items-center gap-1.5 h-8 rounded-md border border-border px-2 font-medium hover:bg-secondary disabled:opacity-40 transition-colors"
           >
             <Download className="h-3.5 w-3.5" />

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState, useSyncExternalStore } from "react";
-import { Bookmark, BookmarkPlus, Table2, Trash2, X, Flame } from "lucide-react";
+import { Bookmark, BookmarkPlus, Table2, Trash2, X, Flame, FileSpreadsheet } from "lucide-react";
 import { useBook } from "@/hooks/use-book";
 import { useUnits, formatMoney } from "@/lib/units";
 import { pct, pctSigned, num } from "@/lib/format";
@@ -62,6 +62,7 @@ function PivotPage() {
   const [drill, setDrill] = useState<{ label: string; cell: PivotCell } | null>(null);
   const [heat, setHeat] = useState(true);
   const [newName, setNewName] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   const viewStore = useSyncExternalStore(subscribeViews, getViewsSnapshot, getServerViewsSnapshot);
   const saved = useMemo(() => viewsFor<PivotConfig>(SCOPE, viewStore), [viewStore]);
@@ -97,6 +98,76 @@ function PivotPage() {
     return { backgroundColor: `color-mix(in oklch, ${hue} ${(t * 26).toFixed(1)}%, transparent)` };
   };
 
+  // The pivot exports as real numbers with the measure's format, so the sheet stays
+  // sortable and summable — plus a second tab listing every lot behind the cross-tab.
+  async function exportExcel() {
+    setExporting(true);
+    try {
+      const { exportXlsx } = await import("@/lib/xlsx-export");
+      const rowLabel = dimension(cfg.rowDim).label;
+      const type =
+        res.measure.format === "money"
+          ? ("money" as const)
+          : res.measure.format === "number"
+            ? ("number" as const)
+            : ("pct" as const);
+
+      const columns = [
+        { header: rowLabel, key: "__row", type: "text" as const, width: 34 },
+        ...res.colKeys.map((ck) => ({ header: ck, key: ck, type, width: 16 })),
+        { header: "Total", key: "__total", type, width: 18 },
+      ];
+      const sheetRows = res.rowKeys.map((rk) => {
+        const rec: Record<string, unknown> = { __row: rk };
+        for (const ck of res.colKeys) rec[ck] = res.cells[rk]?.[ck]?.value ?? null;
+        rec.__total = res.rowTotals[rk]?.value ?? null;
+        return rec;
+      });
+      const totals: Record<string, unknown> = { __row: "Total" };
+      for (const ck of res.colKeys) totals[ck] = res.colTotals[ck]?.value ?? null;
+      totals.__total = res.grand.value;
+
+      await exportXlsx({
+        fileName: `pivot-${cfg.rowDim}-by-${cfg.colDim}`,
+        unit,
+        subtitle: `${rowLabel} × ${dimension(cfg.colDim).label} · ${res.measure.label} · ${rows.length} lots · SG Family Office`,
+        sheets: [
+          { name: "Pivot", columns, rows: sheetRows, totals, freezeCols: 1 },
+          {
+            name: "Underlying lots",
+            freezeCols: 1,
+            columns: [
+              { header: "Security", key: "security", type: "text", width: 40 },
+              { header: "Entity", key: "entity", type: "text", width: 18 },
+              { header: "Custodian", key: "broker", type: "text", width: 22 },
+              { header: "Folio", key: "folio", type: "text", width: 18 },
+              { header: "Asset Class", key: "asset", type: "text", width: 22 },
+              { header: "Invested", key: "invested", type: "money" },
+              { header: "Current Value", key: "current", type: "money" },
+              { header: "Gain", key: "gain", type: "money" },
+              { header: "Gain %", key: "gainPct", type: "pct" },
+            ],
+            rows: rows.map((r) => ({
+              security: r.security_name || r.scheme_name || "",
+              entity: r.entity_name ?? "",
+              broker: r.broker_name ?? "",
+              folio: r.folio_number ?? "",
+              asset: r.asset_class ?? "",
+              invested: r.invested_value,
+              current: r.current_value,
+              gain: r.unrealised_gain,
+              gainPct: r.gain_percent,
+            })),
+          },
+        ],
+      });
+    } catch (err) {
+      console.error("Pivot export failed", err);
+    } finally {
+      setExporting(false);
+    }
+  }
+
   if (error) return <ErrorState error={error as Error} />;
 
   return (
@@ -106,18 +177,29 @@ function PivotPage() {
         title="Pivot"
         description="Cross-tab any dimension against any other. Click a cell to see the lots behind it."
         right={
-          <button
-            onClick={() => setHeat((h) => !h)}
-            className={cn(
-              "inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border text-[11.5px] font-medium transition-colors",
-              heat
-                ? "border-primary/40 bg-primary/10 text-primary"
-                : "border-border text-muted-foreground hover:bg-secondary",
-            )}
-          >
-            <Flame className="h-3.5 w-3.5" />
-            Heat map
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setHeat((h) => !h)}
+              className={cn(
+                "inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border text-[11.5px] font-medium transition-colors",
+                heat
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:bg-secondary",
+              )}
+            >
+              <Flame className="h-3.5 w-3.5" />
+              Heat map
+            </button>
+            <button
+              onClick={exportExcel}
+              disabled={exporting || res.rowKeys.length === 0}
+              title="Download this pivot, plus the underlying lots, as a formatted Excel workbook"
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border text-[11.5px] font-medium text-muted-foreground hover:bg-secondary disabled:opacity-40 transition-colors"
+            >
+              <FileSpreadsheet className="h-3.5 w-3.5" />
+              {exporting ? "Building…" : "Excel"}
+            </button>
+          </div>
         }
       />
 
