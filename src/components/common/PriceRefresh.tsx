@@ -72,5 +72,3 @@ export function PriceRefresh() {
     </div>
   );
 }
-
-export { CircleSlash };

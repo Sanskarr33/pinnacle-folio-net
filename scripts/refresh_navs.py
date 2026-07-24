@@ -43,6 +43,12 @@ AMFI_URL = "https://portal.amfiindia.com/spages/NAVAll.txt"
 # bad ISIN match rather than a real one-day move. Mirrors SANITY_TOLERANCE in prices.ts.
 SANITY_TOLERANCE = 0.4
 
+# AMFI publishes every business day, so a feed older than this is not "the latest NAVs"
+# — it is a stale cache (a filtering proxy serving an old copy, say). Applying it would
+# silently drag the book backwards in time, which is worse than not refreshing at all.
+# Learned the hard way: an unguarded run once baked a 16-month-old feed into the book.
+MAX_FEED_AGE_DAYS = 7
+
 
 def log(msg: str) -> None:
     print(msg, flush=True)
@@ -95,6 +101,41 @@ def fetch_navs() -> tuple[dict[str, float], str]:
     return by_isin, as_of
 
 
+def parse_feed_date(s: str) -> datetime | None:
+    """AMFI stamps dates as '23-Jul-2026'."""
+    try:
+        return datetime.strptime(s.strip(), "%d-%b-%Y").replace(tzinfo=timezone.utc)
+    except (ValueError, AttributeError):
+        return None
+
+
+def check_freshness(as_of: str, book_as_on: str | None) -> str | None:
+    """Return a rejection reason if this feed must not be applied, else None."""
+    feed = parse_feed_date(as_of)
+    if feed is None:
+        return f"feed date '{as_of}' is unparseable - refusing to apply NAVs blind"
+
+    age = (datetime.now(timezone.utc) - feed).days
+    if age > MAX_FEED_AGE_DAYS:
+        return (
+            f"feed is dated {as_of} ({age} days old, limit {MAX_FEED_AGE_DAYS}) "
+            "- almost certainly a stale/cached copy, not today's NAVs"
+        )
+
+    # Applying NAVs older than the book's own valuation date regresses the book.
+    if book_as_on:
+        try:
+            book = datetime.strptime(book_as_on[:10], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            if feed < book:
+                return (
+                    f"feed date {as_of} predates the book's valuation date {book_as_on} "
+                    "- applying it would move valuations backwards"
+                )
+        except ValueError:
+            pass
+    return None
+
+
 def units_of(row: dict) -> float | None:
     u = row.get("units")
     if u is None:
@@ -122,6 +163,11 @@ def main() -> int:
         return 3
 
     log(f"Feed     : AMFI  as of {as_of or 'unknown'}  {len(by_isin)} ISINs")
+
+    stale = check_freshness(as_of, snap.get("asOnDate"))
+    if stale:
+        log(f"WARN : {stale}. Snapshot left unchanged.")
+        return 3
 
     matched_lots = 0
     matched_value = 0.0

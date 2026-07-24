@@ -16,6 +16,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as RebalancingRouteImport } from './routes/rebalancing'
 import { Route as PmsRouteImport } from './routes/pms'
+import { Route as PivotRouteImport } from './routes/pivot'
 import { Route as MutualFundsRouteImport } from './routes/mutual-funds'
 import { Route as MeetingsRouteImport } from './routes/meetings'
 import { Route as LoginRouteImport } from './routes/login'
@@ -70,6 +71,11 @@ const RebalancingRoute = RebalancingRouteImport.update({
 const PmsRoute = PmsRouteImport.update({
   id: '/pms',
   path: '/pms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PivotRoute = PivotRouteImport.update({
+  id: '/pivot',
+  path: '/pivot',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MutualFundsRoute = MutualFundsRouteImport.update({
@@ -194,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/meetings': typeof MeetingsRoute
   '/mutual-funds': typeof MutualFundsRoute
+  '/pivot': typeof PivotRoute
   '/pms': typeof PmsRoute
   '/rebalancing': typeof RebalancingRoute
   '/reports': typeof ReportsRoute
@@ -223,6 +230,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/meetings': typeof MeetingsRoute
   '/mutual-funds': typeof MutualFundsRoute
+  '/pivot': typeof PivotRoute
   '/pms': typeof PmsRoute
   '/rebalancing': typeof RebalancingRoute
   '/reports': typeof ReportsRoute
@@ -253,6 +261,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/meetings': typeof MeetingsRoute
   '/mutual-funds': typeof MutualFundsRoute
+  '/pivot': typeof PivotRoute
   '/pms': typeof PmsRoute
   '/rebalancing': typeof RebalancingRoute
   '/reports': typeof ReportsRoute
@@ -284,6 +293,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/meetings'
     | '/mutual-funds'
+    | '/pivot'
     | '/pms'
     | '/rebalancing'
     | '/reports'
@@ -313,6 +323,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/meetings'
     | '/mutual-funds'
+    | '/pivot'
     | '/pms'
     | '/rebalancing'
     | '/reports'
@@ -342,6 +353,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/meetings'
     | '/mutual-funds'
+    | '/pivot'
     | '/pms'
     | '/rebalancing'
     | '/reports'
@@ -372,6 +384,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MeetingsRoute: typeof MeetingsRoute
   MutualFundsRoute: typeof MutualFundsRoute
+  PivotRoute: typeof PivotRoute
   PmsRoute: typeof PmsRoute
   RebalancingRoute: typeof RebalancingRoute
   ReportsRoute: typeof ReportsRoute
@@ -430,6 +443,13 @@ declare module '@tanstack/react-router' {
       path: '/pms'
       fullPath: '/pms'
       preLoaderRoute: typeof PmsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pivot': {
+      id: '/pivot'
+      path: '/pivot'
+      fullPath: '/pivot'
+      preLoaderRoute: typeof PivotRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mutual-funds': {
@@ -596,6 +616,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MeetingsRoute: MeetingsRoute,
   MutualFundsRoute: MutualFundsRoute,
+  PivotRoute: PivotRoute,
   PmsRoute: PmsRoute,
   RebalancingRoute: RebalancingRoute,
   ReportsRoute: ReportsRoute,

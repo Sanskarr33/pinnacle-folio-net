@@ -28,6 +28,33 @@ const STORAGE_KEY = "sg-prices";
 // is treated as a bad match and ignored, so a mis-key can never distort the book.
 const SANITY_TOLERANCE = 0.4;
 
+// AMFI publishes every business day. A feed older than this is a stale cache (a
+// filtering proxy serving an old copy, say), not "the latest NAVs" — applying it would
+// drag the book backwards in time. Mirrors MAX_FEED_AGE_DAYS in scripts/refresh_navs.py.
+const MAX_FEED_AGE_DAYS = 7;
+
+/** AMFI stamps dates as "23-Jul-2026". Returns null if unparseable. */
+export function parseFeedDate(s: string): Date | null {
+  const m = /^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/.exec((s ?? "").trim());
+  if (!m) return null;
+  const months = "JanFebMarAprMayJunJulAugSepOctNovDec";
+  const mi = months.indexOf(m[2][0].toUpperCase() + m[2].slice(1, 3).toLowerCase()) / 3;
+  if (!Number.isInteger(mi) || mi < 0) return null;
+  const d = new Date(Date.UTC(Number(m[3]), mi, Number(m[1])));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** Reason this feed must not be applied, or null when it is safe. */
+export function feedStaleReason(asOf: string): string | null {
+  const feed = parseFeedDate(asOf);
+  if (!feed) return `Feed date "${asOf}" is unreadable — not applying NAVs blind.`;
+  const ageDays = Math.floor((Date.now() - feed.getTime()) / 86_400_000);
+  if (ageDays > MAX_FEED_AGE_DAYS) {
+    return `The NAV feed is dated ${asOf} — ${ageDays} days old. That is a stale cached copy, not today's NAVs, so it was not applied.`;
+  }
+  return null;
+}
+
 function read(): PriceSnapshot | null {
   if (typeof localStorage === "undefined") return null;
   try {
@@ -169,6 +196,11 @@ export async function refreshPrices(): Promise<PriceSnapshot> {
   if (!data.byIsin || Object.keys(data.byIsin).length === 0) {
     throw new Error("Price feed returned no NAVs.");
   }
+  // Refuse a stale feed outright rather than storing it — a cached copy served by a
+  // filtering proxy would otherwise quietly regress every valuation on the dashboard.
+  const stale = feedStaleReason(data.asOf);
+  if (stale) throw new Error(stale);
+
   const snap: PriceSnapshot = {
     byIsin: data.byIsin,
     asOf: data.asOf || new Date().toISOString().slice(0, 10),

@@ -25,6 +25,7 @@ import {
   Database,
   Settings,
   Globe2,
+  Table2,
 } from "lucide-react";
 import {
   Sidebar,
@@ -51,6 +52,7 @@ const overview: Item[] = [
   { title: "Entities", url: "/entities", icon: Building2 },
   { title: "Asset Allocation", url: "/allocation", icon: PieChart },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
+  { title: "Pivot", url: "/pivot", icon: Table2 },
   { title: "Rebalancing", url: "/rebalancing", icon: Scale },
   { title: "Simulator", url: "/simulator", icon: FlaskConical },
 ];

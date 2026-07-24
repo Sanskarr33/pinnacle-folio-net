@@ -52,3 +52,6 @@ scripts/out/
 scripts/__pycache__/
 __pycache__/
 *.pyc
+
+# Local screenshot helper — grants a session; must never ship
+public/__seed.html
