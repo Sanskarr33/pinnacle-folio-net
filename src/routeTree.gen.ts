@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UlipsRouteImport } from './routes/ulips'
 import { Route as TransactionsRouteImport } from './routes/transactions'
+import { Route as StrategyRouteImport } from './routes/strategy'
 import { Route as SimulatorRouteImport } from './routes/simulator'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReturnsRouteImport } from './routes/returns'
@@ -50,6 +51,11 @@ const UlipsRoute = UlipsRouteImport.update({
 const TransactionsRoute = TransactionsRouteImport.update({
   id: '/transactions',
   path: '/transactions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StrategyRoute = StrategyRouteImport.update({
+  id: '/strategy',
+  path: '/strategy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SimulatorRoute = SimulatorRouteImport.update({
@@ -234,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/returns': typeof ReturnsRoute
   '/settings': typeof SettingsRoute
   '/simulator': typeof SimulatorRoute
+  '/strategy': typeof StrategyRoute
   '/transactions': typeof TransactionsRoute
   '/ulips': typeof UlipsRoute
 }
@@ -268,6 +275,7 @@ export interface FileRoutesByTo {
   '/returns': typeof ReturnsRoute
   '/settings': typeof SettingsRoute
   '/simulator': typeof SimulatorRoute
+  '/strategy': typeof StrategyRoute
   '/transactions': typeof TransactionsRoute
   '/ulips': typeof UlipsRoute
 }
@@ -303,6 +311,7 @@ export interface FileRoutesById {
   '/returns': typeof ReturnsRoute
   '/settings': typeof SettingsRoute
   '/simulator': typeof SimulatorRoute
+  '/strategy': typeof StrategyRoute
   '/transactions': typeof TransactionsRoute
   '/ulips': typeof UlipsRoute
 }
@@ -339,6 +348,7 @@ export interface FileRouteTypes {
     | '/returns'
     | '/settings'
     | '/simulator'
+    | '/strategy'
     | '/transactions'
     | '/ulips'
   fileRoutesByTo: FileRoutesByTo
@@ -373,6 +383,7 @@ export interface FileRouteTypes {
     | '/returns'
     | '/settings'
     | '/simulator'
+    | '/strategy'
     | '/transactions'
     | '/ulips'
   id:
@@ -407,6 +418,7 @@ export interface FileRouteTypes {
     | '/returns'
     | '/settings'
     | '/simulator'
+    | '/strategy'
     | '/transactions'
     | '/ulips'
   fileRoutesById: FileRoutesById
@@ -442,6 +454,7 @@ export interface RootRouteChildren {
   ReturnsRoute: typeof ReturnsRoute
   SettingsRoute: typeof SettingsRoute
   SimulatorRoute: typeof SimulatorRoute
+  StrategyRoute: typeof StrategyRoute
   TransactionsRoute: typeof TransactionsRoute
   UlipsRoute: typeof UlipsRoute
 }
@@ -460,6 +473,13 @@ declare module '@tanstack/react-router' {
       path: '/transactions'
       fullPath: '/transactions'
       preLoaderRoute: typeof TransactionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/strategy': {
+      id: '/strategy'
+      path: '/strategy'
+      fullPath: '/strategy'
+      preLoaderRoute: typeof StrategyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/simulator': {
@@ -706,6 +726,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReturnsRoute: ReturnsRoute,
   SettingsRoute: SettingsRoute,
   SimulatorRoute: SimulatorRoute,
+  StrategyRoute: StrategyRoute,
   TransactionsRoute: TransactionsRoute,
   UlipsRoute: UlipsRoute,
 }

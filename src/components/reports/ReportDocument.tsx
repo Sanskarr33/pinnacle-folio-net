@@ -12,11 +12,16 @@ import {
   useTax,
   useHarvest,
   useRealisedGains,
+  usePerformanceLeaders,
   useBook,
 } from "@/hooks/use-book";
 import { effectiveBands, computeDrift } from "@/lib/policy";
 import { IMPORTED_MEETINGS, ADVISORS, allTrackedActions } from "@/lib/minutes";
 import { CLOSED_STATUSES, OPEN_STATUSES } from "@/lib/meetings";
+import { xirrForRows, xirrByGroup, entityKey } from "@/lib/xirr";
+import { computeBenchmark, isEquityLike, type IndexHistory } from "@/lib/benchmark";
+import { buildEvents, summarise } from "@/lib/liquidity-calendar";
+import indexHistory from "@/data/index-history.json";
 import { inr, pct, pctSigned, formatDate, CR } from "@/lib/format";
 import type { Slice } from "@/lib/types";
 
@@ -77,6 +82,30 @@ export function ReportDocument({ preparedFor = "SG Family Office" }: { preparedF
   const { summary: tax } = useTax(90);
   const { candidates } = useHarvest();
   const { capitalGains } = useRealisedGains();
+  const { best, worst } = usePerformanceLeaders(6, 2_000_000);
+
+  const asOfIso = totals.asOnDate ?? new Date().toISOString().slice(0, 10);
+  // True money-weighted return from the book's own cashflows (not the header average).
+  const mwr = useMemo(() => xirrForRows(book, asOfIso), [book, asOfIso]);
+  const entXirr = useMemo(() => {
+    const map = new Map(xirrByGroup(book, asOfIso, entityKey).map((g) => [g.key, g]));
+    return map;
+  }, [book, asOfIso]);
+  // Same cash, same dates, into NIFTY 50 — equity-like holdings only.
+  const bench = useMemo(
+    () =>
+      computeBenchmark(
+        book.filter((r) => isEquityLike(r.asset_class ?? "")),
+        indexHistory as unknown as IndexHistory,
+        "^NSEI",
+      ),
+    [book],
+  );
+  // Forward liquidity: value whose status frees up within a year.
+  const liq = useMemo(() => {
+    const events = buildEvents(book);
+    return { events, summary: summarise(events, 12) };
+  }, [book]);
 
   const drift = useMemo(() => computeDrift(book, effectiveBands()), [book]);
   const breaches = drift.drifts.filter((d) => d.status !== "within");
@@ -263,7 +292,113 @@ export function ReportDocument({ preparedFor = "SG Family Office" }: { preparedF
     </Page>,
   );
 
-  // ── 3 · Allocation detail ───────────────────────────────────────────────────
+  // ── 3 · Performance & returns ────────────────────────────────────────────────
+  const alphaPts = bench ? bench.actualReturnPct - bench.indexReturnPct : null;
+  pages.push(
+    <Page
+      key="perf"
+      title="Performance & Returns"
+      subtitle={`Money-weighted return and index benchmark as on ${asOn}`}
+    >
+      <div className="rpt-kpigrid">
+        <Kpi
+          label="Money-weighted XIRR"
+          value={mwr.rate != null ? pct(mwr.rate * 100) : "n/a"}
+          accent
+          sub={`${mwr.coveredLots} lots · ${mwr.bookValue > 0 ? ((mwr.coveredValue / mwr.bookValue) * 100).toFixed(0) : 0}% covered`}
+        />
+        <Kpi
+          label="Total return on cost"
+          value={pctSigned(mwr.totalReturnPct)}
+          tone={mwr.totalReturnPct >= 0 ? "good" : "bad"}
+          sub={`${money(mwr.investedCovered)} → ${money(mwr.terminalCovered)}`}
+        />
+        <Kpi
+          label="Alpha vs NIFTY 50"
+          value={alphaPts != null ? `${alphaPts >= 0 ? "+" : ""}${alphaPts.toFixed(1)} pts` : "n/a"}
+          tone={alphaPts != null && alphaPts >= 0 ? "good" : "bad"}
+          sub={bench ? `${money(bench.alpha)} on equity-like` : ""}
+        />
+      </div>
+
+      <div className="rpt-two" style={{ marginTop: "5mm" }}>
+        <Panel title="Money-weighted XIRR by entity">
+          <table className="rpt-slicetable">
+            <tbody>
+              {entities.slice(0, 9).map((e, i) => {
+                const g = entXirr.get(e.key);
+                return (
+                  <tr key={e.key}>
+                    <td className="rpt-slice-name">
+                      <span className="rpt-dot" style={{ background: CHART[i % CHART.length] }} />
+                      {e.key}
+                    </td>
+                    <td className="rpt-r rpt-strong">{money(e.current)}</td>
+                    <td
+                      className="rpt-r"
+                      style={{ color: (g?.rate ?? 0) >= 0 ? C.good : C.bad, fontWeight: 600 }}
+                    >
+                      {g?.rate != null ? pct(g.rate * 100, 1) : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </Panel>
+
+        <Panel title="Same cash, same dates → NIFTY 50">
+          {bench ? (
+            <>
+              <Row
+                label="What it is worth"
+                value={money(bench.actual)}
+                tone="good"
+                sub={`${bench.lots.length} equity-like lots · ${pctSigned(bench.actualReturnPct, 1)}`}
+              />
+              <Row
+                label="If bought the index instead"
+                value={money(bench.benchmark)}
+                sub={pctSigned(bench.indexReturnPct, 1)}
+              />
+              <Row
+                label={bench.alpha >= 0 ? "Ahead of the index" : "Behind the index"}
+                value={money(Math.abs(bench.alpha))}
+                tone={bench.alpha >= 0 ? "good" : "bad"}
+                sub={
+                  alphaPts != null
+                    ? `${alphaPts >= 0 ? "+" : ""}${alphaPts.toFixed(1)} percentage points`
+                    : ""
+                }
+              />
+              <p className="rpt-note" style={{ marginTop: "3mm" }}>
+                Each lot&apos;s cash valued at the NIFTY close on its purchase date, marked to the
+                latest close. NIFTY 50 is a price index (ex-dividend), so the benchmark is modestly
+                understated.
+              </p>
+            </>
+          ) : (
+            <p className="rpt-muted">Index history unavailable.</p>
+          )}
+        </Panel>
+      </div>
+
+      <div className="rpt-two" style={{ marginTop: "5mm" }}>
+        <Panel title="Best performers · by gain %">
+          <MiniLeaders rows={best.slice(0, 6)} tone="good" />
+        </Panel>
+        <Panel title="Laggards · by gain %">
+          {worst.length ? (
+            <MiniLeaders rows={worst.slice(0, 6)} tone="bad" />
+          ) : (
+            <p className="rpt-muted">No positions in loss above the size threshold.</p>
+          )}
+        </Panel>
+      </div>
+    </Page>,
+  );
+
+  // ── 4 · Allocation detail ───────────────────────────────────────────────────
   pages.push(
     <Page key="alloc" title="Allocation Detail" subtitle="Four independent views of the same book">
       <div className="rpt-two">
@@ -274,6 +409,65 @@ export function ReportDocument({ preparedFor = "SG Family Office" }: { preparedF
         <SliceTable title="By entity" slices={entities} />
         <SliceTable title="By custodian" slices={custodians} />
       </div>
+    </Page>,
+  );
+
+  // ── 5 · Entity summary ───────────────────────────────────────────────────────
+  pages.push(
+    <Page key="entsum" title="Entity Summary" subtitle="Each entity's book, side by side">
+      <table className="rpt-table">
+        <thead>
+          <tr>
+            <th>Entity</th>
+            <th className="rpt-r">Value</th>
+            <th className="rpt-r">% Book</th>
+            <th className="rpt-r">Invested</th>
+            <th className="rpt-r">Unreal. gain</th>
+            <th className="rpt-r">Gain %</th>
+            <th className="rpt-r">XIRR</th>
+            <th className="rpt-r">Lots</th>
+          </tr>
+        </thead>
+        <tbody>
+          {entities.map((e) => {
+            const g = entXirr.get(e.key);
+            return (
+              <tr key={e.key}>
+                <td className="rpt-strong">{e.key}</td>
+                <td className="rpt-r rpt-strong">{money(e.current)}</td>
+                <td className="rpt-r rpt-muted">{pct(e.pctOfBook, 1)}</td>
+                <td className="rpt-r">{money(e.invested)}</td>
+                <td className="rpt-r" style={{ color: e.gain >= 0 ? C.good : C.bad }}>
+                  {money(e.gain)}
+                </td>
+                <td className="rpt-r" style={{ color: e.gainPct >= 0 ? C.good : C.bad }}>
+                  {pctSigned(e.gainPct, 0)}
+                </td>
+                <td className="rpt-r">{g?.rate != null ? pct(g.rate * 100, 1) : "—"}</td>
+                <td className="rpt-r rpt-muted">{e.count}</td>
+              </tr>
+            );
+          })}
+          <tr className="rpt-total">
+            <td className="rpt-strong">Total</td>
+            <td className="rpt-r rpt-strong">{money(totals.currentValue)}</td>
+            <td className="rpt-r rpt-muted">100%</td>
+            <td className="rpt-r">{money(totals.investedValue)}</td>
+            <td className="rpt-r" style={{ color: totals.unrealisedGain >= 0 ? C.good : C.bad }}>
+              {money(totals.unrealisedGain)}
+            </td>
+            <td className="rpt-r" style={{ color: totals.unrealisedGainPct >= 0 ? C.good : C.bad }}>
+              {pctSigned(totals.unrealisedGainPct, 0)}
+            </td>
+            <td className="rpt-r">{mwr.rate != null ? pct(mwr.rate * 100, 1) : "—"}</td>
+            <td className="rpt-r rpt-muted">{totals.holdingCount}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p className="rpt-note">
+        XIRR is the money-weighted return solved from each entity&apos;s own dated cashflows, and is
+        shown only where lots carry a purchase date and cost. The Total XIRR row is the whole book.
+      </p>
     </Page>,
   );
 
@@ -491,6 +685,17 @@ export function ReportDocument({ preparedFor = "SG Family Office" }: { preparedF
             sub="to realise those losses"
           />
         </Panel>
+      </div>
+
+      <SectionLabel>Forward liquidity — value whose status changes</SectionLabel>
+      <div className="rpt-kpigrid" style={{ marginBottom: "5mm" }}>
+        <Kpi label="Frees up within 3 months" value={money(liq.summary.freeingIn3m)} />
+        <Kpi label="Frees up within 6 months" value={money(liq.summary.freeingIn6m)} />
+        <Kpi
+          label="Frees up within 12 months"
+          value={money(liq.summary.freeingIn12m)}
+          sub={`${liq.events.length} dated events`}
+        />
       </div>
 
       {exit.locked.length > 0 && (
@@ -739,6 +944,29 @@ function SliceTable({ title, slices }: { title: string; slices: Slice[] }) {
   );
 }
 
+function MiniLeaders({ rows, tone }: { rows: Slice[]; tone: "good" | "bad" }) {
+  const color = tone === "good" ? C.good : C.bad;
+  return (
+    <table className="rpt-slicetable">
+      <tbody>
+        {rows.map((s) => (
+          <tr key={s.key}>
+            <td className="rpt-slice-name" style={{ maxWidth: "52mm" }}>
+              {s.key}
+            </td>
+            <td className="rpt-r rpt-muted" style={{ fontSize: "8pt" }}>
+              {money(s.current)}
+            </td>
+            <td className="rpt-r" style={{ color, fontWeight: 600 }}>
+              {pctSigned(s.gainPct, 0)}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 // ─── Scoped stylesheet ────────────────────────────────────────────────────────
 // Fixed colours, A4 geometry, and print isolation so only the report prints.
 
@@ -811,6 +1039,7 @@ function ReportStyles() {
 .rpt-table thead th{ text-align:left; font-size:7.5pt; letter-spacing:.1em; text-transform:uppercase; color:${C.muted}; font-weight:600; border-bottom:1pt solid ${C.navy}; padding:2mm 2mm; }
 .rpt-table tbody td{ padding:1.9mm 2mm; border-bottom:.4pt solid ${C.line}; }
 .rpt-table tfoot td{ padding:2.4mm 2mm; border-top:1.2pt solid ${C.navy}; font-weight:700; font-size:8.5pt; }
+.rpt-table tr.rpt-total td{ border-top:1.2pt solid ${C.navy}; border-bottom:none; font-weight:700; padding-top:2.4mm; }
 .rpt-r{ text-align:right; font-variant-numeric:tabular-nums; }
 .rpt-num{ width:8mm; color:${C.faint}; font-variant-numeric:tabular-nums; }
 .rpt-name{ font-weight:600; color:${C.ink}; }

@@ -30,6 +30,7 @@ import {
   Target,
   SquarePen,
   Gauge,
+  Compass,
 } from "lucide-react";
 import {
   Sidebar,
@@ -59,6 +60,7 @@ const overview: Item[] = [
   { title: "Pivot", url: "/pivot", icon: Table2 },
   { title: "Benchmark", url: "/benchmark", icon: Target },
   { title: "Returns (XIRR)", url: "/returns", icon: Gauge },
+  { title: "Strategy", url: "/strategy", icon: Compass },
   { title: "Rebalancing", url: "/rebalancing", icon: Scale },
   { title: "Simulator", url: "/simulator", icon: FlaskConical },
 ];
