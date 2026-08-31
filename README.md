@@ -47,6 +47,80 @@ control total and prints the variances. Some are expected — `R6_Summary_Bullio
 contains `#REF!` errors, so R1 understates bullion. Lot-level detail wins; the
 difference is reported rather than plugged.
 
+## Refreshing the dashboard (`portfolio.json`)
+
+The **Dashboard** page (`/`) is the one route that does **not** read the bundled
+workbook snapshots. It fetches a single file at runtime:
+
+```
+public/portfolio.json
+```
+
+There are two ways to refresh it.
+
+### A. Paste it into the dashboard (no redeploy)
+
+1. Run `python3 gen.py <input_D.json> <out_dir>`.
+2. Open the dashboard, expand **Update data**, paste the contents of
+   `portfolio.json`, and press **Validate & apply**.
+
+The paste is parsed, structurally checked, and reconciled against its own totals
+before anything on the page changes. A file that fails reconciliation is not applied
+on the first press — you get the failing checks and a second, explicit **Apply
+anyway**.
+
+`portfolio.summary.json` is accepted too; the page renders every section except the
+holdings table and says so.
+
+> **This stores in one browser only.** It is held in `localStorage`, the same way
+> [`overrides.ts`](src/lib/overrides.ts) and [`manual-entries.ts`](src/lib/manual-entries.ts)
+> hold their edits. Your phone, and anyone else on the Netlify link, keep seeing the
+> deployed file until you do (B). There is no server-side write path today — the
+> Supabase client carries a publishable anon key and no Netlify function writes.
+> **Revert to deployed file** clears it.
+
+Which source is live is always stated on screen — in the **Update data** header and
+again in the page footer.
+
+### B. Replace the file and redeploy (everyone sees it)
+
+1. Run `gen.py` as above.
+2. Drop the result over `public/portfolio.json`.
+3. `git push` — Netlify builds from `netlify.toml`.
+
+Use (A) for a quick look, (B) when the family should see it. Everything on the page —
+headline totals, movement, categories, sleeves, entities, breakdowns, flags and all
+465 holdings — comes from that one file either way.
+
+### Rules the page follows
+
+- **Nothing is derived in the browser.** Every figure printed is a field that already
+  exists in the file. Counts come from `totals.counts`, shares from `weightPct` /
+  `sharePct`. If a number is needed and is not in the file, it must be added to the
+  file — not computed in a component.
+- **The as-at date is always visible.** `meta.asOfHoldings` renders in a banner that
+  cannot be dismissed: grey under 24h, amber at 1–3 days, red beyond 3 days. An
+  unparseable date is treated as loudly as a stale one.
+- **`null` renders as `n/a`.** Never `0`, never blank, never `NaN`. Several holdings
+  genuinely have a null `avgPrice` and `gainPct`; that is real data.
+- **A failed or malformed fetch shows an error state and no figures at all**, rather
+  than a stale or partial book.
+- **`schemaVersion` is checked** against `1.0` and warns visibly on a mismatch.
+
+### Verifying a new file
+
+[`portfolio-reconcile.ts`](src/lib/portfolio-reconcile.ts) asserts that `categories`,
+`sleeves`, `entities`, `holdings` and `breakdowns.byAssetClass` each sum to
+`totals.currentValue` within ₹1, that `categories[].weightPct` sums to 100.00, and
+that the row counts match `totals.counts`. Holdings checks are skipped for the
+compact file, which has no instrument list.
+
+It runs in two places: on every paste (blocking, as described above), and on load in
+development, where it prints a table to the console.
+
+A failure there means the **file** disagrees with itself — regenerate it rather than
+adjusting the dashboard.
+
 ## Daily refresh
 
 `scripts/daily_sync.ps1` re-imports the workbook and mirrors it to Supabase. Register

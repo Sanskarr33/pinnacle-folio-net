@@ -12,11 +12,18 @@ export function PageHeader({
   title,
   description,
   right,
+  hideAsOn,
 }: {
   eyebrow: string;
   title: string;
   description?: string;
   right?: React.ReactNode;
+  /**
+   * Suppress the workbook as-on chip. For pages that source their figures from
+   * somewhere other than holdings-snapshot.json and stamp their own date — two
+   * different as-at dates stacked on one page is worse than none.
+   */
+  hideAsOn?: boolean;
 }) {
   const { totals, isLoading } = useTotals();
 
@@ -32,7 +39,7 @@ export function PageHeader({
         {description && (
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">{description}</p>
         )}
-        {!isLoading && totals.asOnDate && (
+        {!hideAsOn && !isLoading && totals.asOnDate && (
           <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground bg-secondary/60 border border-border rounded-md px-2 py-1">
             <CalendarClock className="h-3 w-3" />
             Valuations as on {formatDate(totals.asOnDate)}
